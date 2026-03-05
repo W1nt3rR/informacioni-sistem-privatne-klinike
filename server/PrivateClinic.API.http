@@ -1,0 +1,6 @@
+@PrivateClinic.API_HostAddress = http://localhost:5181
+
+GET {{PrivateClinic.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

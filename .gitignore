@@ -1,0 +1,58 @@
+# =========================
+# .NET / C#
+# =========================
+## Build results
+server/bin/
+server/obj/
+server/out/
+
+## User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## NuGet
+**/packages/
+*.nupkg
+**/project.lock.json
+**/project.fragment.lock.json
+
+## VS / Rider
+.vs/
+.idea/
+*.swp
+*~
+
+# =========================
+# Angular / Node.js
+# =========================
+client/node_modules/
+client/dist/
+client/.angular/
+client/.sass-cache/
+
+## Environment files
+client/src/environments/environment.ts
+!client/src/environments/environment.development.ts
+
+## Misc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# IDE
+# =========================
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
