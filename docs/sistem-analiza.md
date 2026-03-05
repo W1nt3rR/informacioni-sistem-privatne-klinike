@@ -1317,8 +1317,8 @@ erDiagram
     }
 
     LEKAR_USLUGA {
-        int LekarID PK_FK
-        int UslugaID PK_FK
+        int LekarID PK "FK"
+        int UslugaID PK "FK"
     }
 
     ORDINACIJA {
@@ -1666,7 +1666,7 @@ erDiagram
 
     LEKAR {
         INT LekarID PK
-        INT KorisnikID FK_UK
+        INT KorisnikID FK "UK"
         INT SpecijalizacijaID FK
         NVARCHAR20 Titula
         NVARCHAR30 LicencaBroj UK
@@ -1690,8 +1690,8 @@ erDiagram
     }
 
     LEKAR_USLUGA {
-        INT LekarID PK_FK
-        INT UslugaID PK_FK
+        INT LekarID PK "FK"
+        INT UslugaID PK "FK"
     }
 
     ORDINACIJA {
@@ -1792,7 +1792,7 @@ erDiagram
 
     PREGLED {
         INT PregledID PK
-        INT TerminID FK_UK
+        INT TerminID FK "UK"
         INT LekarID FK
         INT PacijentID FK
         NVARCHARMAX Anamneza
