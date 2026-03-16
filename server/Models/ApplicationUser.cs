@@ -8,6 +8,8 @@ public class ApplicationUser : IdentityUser
     public string Prezime { get; set; } = string.Empty;
     public bool Aktivan { get; set; } = true;
     public DateTime DatumKreiranja { get; set; } = DateTime.UtcNow;
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
 
     // Navigation
     public Doctor? Doctor { get; set; }
