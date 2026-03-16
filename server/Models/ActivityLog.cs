@@ -6,7 +6,7 @@ public class ActivityLog
     public string UserId { get; set; } = string.Empty;
     public string Akcija { get; set; } = string.Empty; // kreiranje, izmena, brisanje, prijava, odjava
     public string Tabela { get; set; } = string.Empty;
-    public int? EntitetId { get; set; }
+    public string? EntitetId { get; set; }
     public string? StareVrednosti { get; set; }
     public string? NoveVrednosti { get; set; }
     public DateTime DatumVreme { get; set; } = DateTime.UtcNow;

@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PrivateClinic.API.Models;
+using PrivateClinic.API.Services;
 
 namespace PrivateClinic.API.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options)
+public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService auditService)
     : IdentityDbContext<ApplicationUser>(options)
 {
+    private readonly IAuditService _auditService = auditService;
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<Specialization> Specializations => Set<Specialization>();
     public DbSet<Service> Services => Set<Service>();
@@ -30,6 +32,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Message> Messages => Set<Message>();
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var auditLogs = _auditService.GetPendingLogs(ChangeTracker);
+        var result = await base.SaveChangesAsync(cancellationToken);
+
+        if (auditLogs.Count > 0)
+        {
+            ActivityLogs.AddRange(auditLogs);
+            await base.SaveChangesAsync(cancellationToken);
+        }
+
+        return result;
+    }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

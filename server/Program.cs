@@ -57,6 +57,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi("v1", options =>
@@ -92,6 +93,8 @@ app.UseCors("AllowAngular");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<AuditContextMiddleware>();
 
 app.MapControllers();
 
