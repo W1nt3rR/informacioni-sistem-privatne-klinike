@@ -95,6 +95,7 @@ export class LayoutComponent implements OnInit {
     {
       title: 'Sistem',
       items: [
+        { label: 'Korisnici', icon: 'manage_accounts', route: '/users' },
         { label: 'Obaveštenja', icon: 'notifications', route: '/notifications' },
         { label: 'Evidencija aktivnosti', icon: 'history', route: '/activity-log' },
       ],

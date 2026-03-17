@@ -81,6 +81,10 @@ export const routes: Routes = [
         path: 'activity-log',
         loadChildren: () => import('./features/activity-log/activity-log.routes').then(m => m.ACTIVITY_LOG_ROUTES),
       },
+      {
+        path: 'users',
+        loadChildren: () => import('./features/users/users.routes').then(m => m.USER_ROUTES),
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },
