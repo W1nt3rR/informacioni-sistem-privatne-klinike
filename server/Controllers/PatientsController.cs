@@ -37,7 +37,7 @@ public class PatientsController(AppDbContext db, UserManager<ApplicationUser> us
             .Select(p => new PatientListResponse(
                 p.PatientId, p.Ime, p.Prezime, p.JMBG,
                 p.DatumRodjenja.ToString("yyyy-MM-dd"), p.Pol,
-                p.Telefon, p.Email, p.Aktivan))
+                p.Telefon, p.Email, p.Aktivan, p.JeStudent, p.JePenzioner))
             .ToListAsync();
 
         return Ok(list);
@@ -61,7 +61,7 @@ public class PatientsController(AppDbContext db, UserManager<ApplicationUser> us
             .Select(p => new PatientListResponse(
                 p.PatientId, p.Ime, p.Prezime, p.JMBG,
                 p.DatumRodjenja.ToString("yyyy-MM-dd"), p.Pol,
-                p.Telefon, p.Email, p.Aktivan))
+                p.Telefon, p.Email, p.Aktivan, p.JeStudent, p.JePenzioner))
             .ToListAsync();
 
         return Ok(list);
@@ -80,6 +80,7 @@ public class PatientsController(AppDbContext db, UserManager<ApplicationUser> us
             p.PatientId, p.Ime, p.Prezime, p.JMBG,
             p.DatumRodjenja.ToString("yyyy-MM-dd"), p.Pol,
             p.Adresa, p.Telefon, p.Email, p.BrojOsiguranja, p.Napomene,
+            p.JeStudent, p.JePenzioner,
             p.DatumRegistracije, p.Aktivan,
             p.Allergies.Select(a => new AllergyResponse(
                 a.AllergyId, a.NazivAlergena, a.Opis, a.Ozbiljnost)).ToList()));
@@ -132,7 +133,9 @@ public class PatientsController(AppDbContext db, UserManager<ApplicationUser> us
             Telefon = request.Telefon,
             Email = request.Email,
             BrojOsiguranja = request.BrojOsiguranja,
-            Napomene = request.Napomene
+            Napomene = request.Napomene,
+            JeStudent = request.JeStudent,
+            JePenzioner = request.JePenzioner
         };
 
         if (!string.IsNullOrEmpty(request.UserId))
@@ -157,7 +160,8 @@ public class PatientsController(AppDbContext db, UserManager<ApplicationUser> us
                 entity.PatientId, entity.Ime, entity.Prezime, entity.JMBG,
                 entity.DatumRodjenja.ToString("yyyy-MM-dd"), entity.Pol,
                 entity.Adresa, entity.Telefon, entity.Email, entity.BrojOsiguranja,
-                entity.Napomene, entity.DatumRegistracije, entity.Aktivan, []));
+                entity.Napomene, entity.JeStudent, entity.JePenzioner,
+                entity.DatumRegistracije, entity.Aktivan, []));
     }
 
     [HttpPut("{id}")]
@@ -177,6 +181,8 @@ public class PatientsController(AppDbContext db, UserManager<ApplicationUser> us
         entity.Email = request.Email;
         entity.BrojOsiguranja = request.BrojOsiguranja;
         entity.Napomene = request.Napomene;
+        entity.JeStudent = request.JeStudent;
+        entity.JePenzioner = request.JePenzioner;
 
         await db.SaveChangesAsync();
         return NoContent();

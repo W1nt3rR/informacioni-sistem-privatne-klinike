@@ -169,6 +169,11 @@ public class ExaminationsController(AppDbContext db) : ControllerBase
             return BadRequest("Pregled je već završen.");
 
         exam.Status = "zavrsen";
+
+        var appointment = await db.Appointments.FindAsync(exam.AppointmentId);
+        if (appointment != null)
+            appointment.Status = "zavrsen";
+
         await db.SaveChangesAsync();
         return NoContent();
     }

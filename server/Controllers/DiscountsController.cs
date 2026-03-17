@@ -17,7 +17,7 @@ public class DiscountsController(AppDbContext db) : ControllerBase
     {
         var list = await db.Discounts
             .OrderBy(d => d.Naziv)
-            .Select(d => new DiscountResponse(d.DiscountId, d.Naziv, d.Procenat, d.VaziOd, d.VaziDo, d.Aktivan))
+            .Select(d => new DiscountResponse(d.DiscountId, d.Naziv, d.Tip, d.Procenat, d.VaziOd, d.VaziDo, d.Aktivan))
             .ToListAsync();
         return Ok(list);
     }
@@ -27,7 +27,7 @@ public class DiscountsController(AppDbContext db) : ControllerBase
     {
         var d = await db.Discounts.FindAsync(id);
         if (d == null) return NotFound();
-        return Ok(new DiscountResponse(d.DiscountId, d.Naziv, d.Procenat, d.VaziOd, d.VaziDo, d.Aktivan));
+        return Ok(new DiscountResponse(d.DiscountId, d.Naziv, d.Tip, d.Procenat, d.VaziOd, d.VaziDo, d.Aktivan));
     }
 
     [HttpPost]
@@ -37,6 +37,7 @@ public class DiscountsController(AppDbContext db) : ControllerBase
         var entity = new Discount
         {
             Naziv = request.Naziv,
+            Tip = request.Tip,
             Procenat = request.Procenat,
             VaziOd = request.VaziOd,
             VaziDo = request.VaziDo,
@@ -44,7 +45,7 @@ public class DiscountsController(AppDbContext db) : ControllerBase
         };
         db.Discounts.Add(entity);
         await db.SaveChangesAsync();
-        var response = new DiscountResponse(entity.DiscountId, entity.Naziv, entity.Procenat, entity.VaziOd, entity.VaziDo, entity.Aktivan);
+        var response = new DiscountResponse(entity.DiscountId, entity.Naziv, entity.Tip, entity.Procenat, entity.VaziOd, entity.VaziDo, entity.Aktivan);
         return CreatedAtAction(nameof(GetById), new { id = entity.DiscountId }, response);
     }
 
@@ -55,6 +56,7 @@ public class DiscountsController(AppDbContext db) : ControllerBase
         var entity = await db.Discounts.FindAsync(id);
         if (entity == null) return NotFound();
         entity.Naziv = request.Naziv;
+        entity.Tip = request.Tip;
         entity.Procenat = request.Procenat;
         entity.VaziOd = request.VaziOd;
         entity.VaziDo = request.VaziDo;

@@ -1,6 +1,7 @@
 export interface Discount {
   discountId: number;
   naziv: string;
+  tip: string;
   procenat: number;
   vaziOd: string | null;
   vaziDo: string | null;
@@ -9,6 +10,7 @@ export interface Discount {
 
 export interface CreateDiscountRequest {
   naziv: string;
+  tip: string;
   procenat: number;
   vaziOd: string | null;
   vaziDo: string | null;
@@ -17,6 +19,7 @@ export interface CreateDiscountRequest {
 
 export interface UpdateDiscountRequest {
   naziv: string;
+  tip: string;
   procenat: number;
   vaziOd: string | null;
   vaziDo: string | null;

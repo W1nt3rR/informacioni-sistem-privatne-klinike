@@ -13,6 +13,8 @@ public class Patient
     public string? Email { get; set; }
     public string? BrojOsiguranja { get; set; }
     public string? Napomene { get; set; }
+    public bool JeStudent { get; set; }
+    public bool JePenzioner { get; set; }
     public DateTime DatumRegistracije { get; set; } = DateTime.UtcNow;
     public bool Aktivan { get; set; } = true;
 

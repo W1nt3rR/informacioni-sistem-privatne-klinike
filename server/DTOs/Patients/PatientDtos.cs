@@ -9,7 +9,9 @@ public record PatientListResponse(
     string Pol,
     string Telefon,
     string? Email,
-    bool Aktivan);
+    bool Aktivan,
+    bool JeStudent,
+    bool JePenzioner);
 
 public record PatientDetailResponse(
     int PatientId,
@@ -23,6 +25,8 @@ public record PatientDetailResponse(
     string? Email,
     string? BrojOsiguranja,
     string? Napomene,
+    bool JeStudent,
+    bool JePenzioner,
     DateTime DatumRegistracije,
     bool Aktivan,
     List<AllergyResponse> Allergies);
@@ -44,6 +48,8 @@ public record CreatePatientRequest(
     string? Email,
     string? BrojOsiguranja,
     string? Napomene,
+    bool JeStudent = false,
+    bool JePenzioner = false,
     string? UserId = null);
 
 public record UpdatePatientRequest(
@@ -56,7 +62,9 @@ public record UpdatePatientRequest(
     string Telefon,
     string? Email,
     string? BrojOsiguranja,
-    string? Napomene);
+    string? Napomene,
+    bool JeStudent = false,
+    bool JePenzioner = false);
 
 public record CreateAllergyRequest(
     string NazivAlergena,

@@ -29,6 +29,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
           <thead>
             <tr>
               <th>Naziv</th>
+              <th>Tip</th>
               <th>Procenat</th>
               <th>Važi od</th>
               <th>Važi do</th>
@@ -40,6 +41,9 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
             @for (row of items(); track row.discountId) {
               <tr>
                 <td>{{ row.naziv }}</td>
+                <td>
+                  <span class="badge" [class]="row.tip === 'student' ? 'badge-info' : row.tip === 'penzioner' ? 'badge-warning' : 'badge-ghost'">{{ row.tip === 'opsti' ? 'Opšti' : row.tip === 'student' ? 'Student' : 'Penzioner' }}</span>
+                </td>
                 <td>{{ row.procenat | number:'1.0-2' }}%</td>
                 <td>{{ row.vaziOd ? (row.vaziOd | date:'dd.MM.yyyy.') : '—' }}</td>
                 <td>{{ row.vaziDo ? (row.vaziDo | date:'dd.MM.yyyy.') : '—' }}</td>

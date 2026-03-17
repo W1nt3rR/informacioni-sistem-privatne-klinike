@@ -28,6 +28,12 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
         <span class="badge" [class]="patient()!.aktivan ? 'badge-success' : 'badge-error'">
           {{ patient()!.aktivan ? 'Aktivan' : 'Neaktivan' }}
         </span>
+        @if (patient()!.jeStudent) {
+          <span class="badge badge-info">Student</span>
+        }
+        @if (patient()!.jePenzioner) {
+          <span class="badge badge-warning">Penzioner</span>
+        }
       </div>
 
       <div role="tablist" class="tabs tabs-bordered mb-4">

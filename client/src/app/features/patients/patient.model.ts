@@ -8,6 +8,8 @@ export interface Patient {
   telefon: string;
   email: string | null;
   aktivan: boolean;
+  jeStudent: boolean;
+  jePenzioner: boolean;
 }
 
 export interface PatientDetail extends Patient {

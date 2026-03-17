@@ -15,6 +15,14 @@ import { Discount } from './discount.model';
         <input class="input w-full" formControlName="naziv" />
       </fieldset>
       <fieldset class="fieldset">
+        <legend class="fieldset-legend">Tip</legend>
+        <select class="select w-full" formControlName="tip">
+          <option value="opsti">Opšti</option>
+          <option value="student">Student</option>
+          <option value="penzioner">Penzioner</option>
+        </select>
+      </fieldset>
+      <fieldset class="fieldset">
         <legend class="fieldset-legend">Procenat (%)</legend>
         <input class="input w-full" type="number" formControlName="procenat" min="0" max="100" />
       </fieldset>
@@ -46,6 +54,7 @@ export class DiscountDialogComponent {
 
   form = this.fb.group({
     naziv: [this.data?.naziv ?? '', Validators.required],
+    tip: [this.data?.tip ?? 'opsti', Validators.required],
     procenat: [this.data?.procenat ?? 0, [Validators.required, Validators.min(0), Validators.max(100)]],
     vaziOd: [this.data?.vaziOd ?? ''],
     vaziDo: [this.data?.vaziDo ?? ''],

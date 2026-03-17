@@ -375,28 +375,50 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
 
     private async Task CreateInvoiceForAppointment(Appointment appointment, Service service)
     {
+        var patient = await db.Patients.FindAsync(appointment.PatientId);
+        var discountPercent = await CalculateDiscountPercent(patient!);
+
         var brojRacuna = await GenerateBrojRacuna();
         var invoice = new Invoice
         {
             PatientId = appointment.PatientId,
             AppointmentId = appointment.AppointmentId,
             BrojRacuna = brojRacuna,
-            PopustProcenat = 0,
+            PopustProcenat = discountPercent,
             DatumIzdavanja = DateTime.UtcNow,
         };
         var lineTotal = service.Cena;
+        var discountedLine = lineTotal * (1 - discountPercent / 100m);
         invoice.Items.Add(new InvoiceItem
         {
             ServiceId = service.ServiceId,
             JedinicnaCena = service.Cena,
             Kolicina = 1,
-            PopustProcenat = 0,
-            Iznos = lineTotal,
+            PopustProcenat = discountPercent,
+            Iznos = Math.Round(discountedLine, 2),
         });
         invoice.UkupanIznos = lineTotal;
-        invoice.IznosZaNaplatu = lineTotal;
+        invoice.IznosZaNaplatu = Math.Round(discountedLine, 2);
         db.Invoices.Add(invoice);
         await db.SaveChangesAsync();
+    }
+
+    private async Task<decimal> CalculateDiscountPercent(Patient patient)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var applicableTypes = new List<string> { "opsti" };
+        if (patient.JeStudent) applicableTypes.Add("student");
+        if (patient.JePenzioner) applicableTypes.Add("penzioner");
+
+        var discounts = await db.Discounts
+            .Where(d => d.Aktivan &&
+                applicableTypes.Contains(d.Tip) &&
+                (d.VaziOd == null || d.VaziOd <= today) &&
+                (d.VaziDo == null || d.VaziDo >= today))
+            .ToListAsync();
+
+        var total = discounts.Sum(d => d.Procenat);
+        return Math.Min(total, 100m);
     }
 
     private async Task<string> GenerateBrojRacuna()

@@ -62,6 +62,16 @@ import { Patient } from './patient.model';
         <legend class="fieldset-legend">Napomene</legend>
         <textarea class="textarea w-full" formControlName="napomene" rows="2"></textarea>
       </fieldset>
+      <div class="flex gap-4 mt-2">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" class="toggle toggle-sm" formControlName="jeStudent" />
+          Student
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" class="toggle toggle-sm" formControlName="jePenzioner" />
+          Penzioner
+        </label>
+      </div>
       <div class="modal-action">
         <button class="btn" type="button" (click)="dialogRef.close()">Otkaži</button>
         <button class="btn btn-primary" type="submit" [disabled]="form.invalid">
@@ -89,6 +99,8 @@ export class PatientDialogComponent {
     adresa: [(this.data as any)?.adresa ?? ''],
     brojOsiguranja: [(this.data as any)?.brojOsiguranja ?? ''],
     napomene: [(this.data as any)?.napomene ?? ''],
+    jeStudent: [(this.data as any)?.jeStudent ?? false],
+    jePenzioner: [(this.data as any)?.jePenzioner ?? false],
   });
 
   save(): void {
