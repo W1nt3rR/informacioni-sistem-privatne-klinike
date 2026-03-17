@@ -82,6 +82,7 @@ export class LayoutComponent {
       items: [
         { label: 'Osoblje', icon: 'badge', route: '/staff' },
         { label: 'Usluge', icon: 'inventory', route: '/services' },
+        { label: 'Specijalizacije', icon: 'school', route: '/specializations' },
         { label: 'Ordinacije', icon: 'meeting_room', route: '/offices' },
         { label: 'Dijagnoze', icon: 'biotech', route: '/diagnoses' },
         { label: 'Radno vreme', icon: 'schedule', route: '/working-hours' },

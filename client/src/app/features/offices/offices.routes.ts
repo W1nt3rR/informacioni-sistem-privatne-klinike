@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
-import { PlaceholderComponent } from '../../shared/components/placeholder.component';
+import { OfficeListComponent } from './office-list.component';
 
 export const OFFICE_ROUTES: Routes = [
-  { path: '', component: PlaceholderComponent, data: { title: 'Ordinacije' } },
+  { path: '', component: OfficeListComponent },
 ];

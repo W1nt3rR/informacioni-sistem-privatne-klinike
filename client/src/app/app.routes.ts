@@ -62,6 +62,10 @@ export const routes: Routes = [
         loadChildren: () => import('./features/diagnoses/diagnoses.routes').then(m => m.DIAGNOSIS_ROUTES),
       },
       {
+        path: 'specializations',
+        loadChildren: () => import('./features/specializations/specializations.routes').then(m => m.SPECIALIZATION_ROUTES),
+      },
+      {
         path: 'working-hours',
         loadChildren: () => import('./features/working-hours/working-hours.routes').then(m => m.WORKING_HOURS_ROUTES),
       },
