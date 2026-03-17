@@ -398,6 +398,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
                 .WithMany(p => p.Invoices)
                 .HasForeignKey(i => i.PatientId)
                 .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(i => i.Appointment)
+                .WithOne(a => a.Invoice)
+                .HasForeignKey<Invoice>(i => i.AppointmentId)
+                .OnDelete(DeleteBehavior.SetNull);
             e.Property(i => i.BrojRacuna).HasMaxLength(30).IsRequired();
             e.HasIndex(i => i.BrojRacuna).IsUnique();
             e.Property(i => i.DatumIzdavanja).HasDefaultValueSql("GETUTCDATE()");

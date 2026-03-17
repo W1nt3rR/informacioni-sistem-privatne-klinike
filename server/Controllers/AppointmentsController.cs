@@ -78,6 +78,9 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         var service = await db.Services.FindAsync(req.ServiceId);
         if (service == null) return BadRequest("Usluga ne postoji.");
 
+        if (req.DatumVreme < DateTime.Now)
+            return BadRequest("Ne možete zakazati termin u prošlosti.");
+
         var trajanje = service.TrajanjeMinuta;
         var kraj = req.DatumVreme.AddMinutes(trajanje);
 
@@ -134,6 +137,9 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
 
         db.Appointments.Add(appointment);
         await db.SaveChangesAsync();
+
+        // Auto-create invoice for this appointment
+        await CreateInvoiceForAppointment(appointment, service);
 
         return await GetById(appointment.AppointmentId);
     }
@@ -210,6 +216,18 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
 
         appointment.Status = req.Status;
         appointment.RazlogOtkazivanja = req.RazlogOtkazivanja;
+
+        // Remove unpaid invoice linked to this appointment
+        var invoice = await db.Invoices
+            .Include(i => i.Items)
+            .Include(i => i.Payments)
+            .FirstOrDefaultAsync(i => i.AppointmentId == id);
+        if (invoice != null && !invoice.Payments.Any())
+        {
+            db.InvoiceItems.RemoveRange(invoice.Items);
+            db.Invoices.Remove(invoice);
+        }
+
         await db.SaveChangesAsync();
 
         // Check waiting list for this service/doctor and create notification
@@ -317,11 +335,19 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
 
         // Generate slots
         var slots = new List<AvailableSlotResponse>();
+        var now = DateTime.Now;
         var current = wh.VremeOd;
         while (current.AddMinutes(duration) <= wh.VremeDo)
         {
             var slotStart = dateOnly.ToDateTime(current);
             var slotEnd = slotStart.AddMinutes(duration);
+
+            // Skip slots that have already passed
+            if (slotStart < now)
+            {
+                current = current.AddMinutes(15);
+                continue;
+            }
 
             var doctorConflict = existing.Any(e =>
                 e.DatumVreme < slotEnd &&
@@ -345,5 +371,53 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         }
 
         return Ok(slots);
+    }
+
+    private async Task CreateInvoiceForAppointment(Appointment appointment, Service service)
+    {
+        var brojRacuna = await GenerateBrojRacuna();
+        var invoice = new Invoice
+        {
+            PatientId = appointment.PatientId,
+            AppointmentId = appointment.AppointmentId,
+            BrojRacuna = brojRacuna,
+            PopustProcenat = 0,
+            DatumIzdavanja = DateTime.UtcNow,
+        };
+        var lineTotal = service.Cena;
+        invoice.Items.Add(new InvoiceItem
+        {
+            ServiceId = service.ServiceId,
+            JedinicnaCena = service.Cena,
+            Kolicina = 1,
+            PopustProcenat = 0,
+            Iznos = lineTotal,
+        });
+        invoice.UkupanIznos = lineTotal;
+        invoice.IznosZaNaplatu = lineTotal;
+        db.Invoices.Add(invoice);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task<string> GenerateBrojRacuna()
+    {
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        var prefix = $"RN-{today}-";
+
+        var lastNumber = await db.Invoices
+            .Where(i => i.BrojRacuna.StartsWith(prefix))
+            .OrderByDescending(i => i.BrojRacuna)
+            .Select(i => i.BrojRacuna)
+            .FirstOrDefaultAsync();
+
+        int seq = 1;
+        if (lastNumber is not null)
+        {
+            var numPart = lastNumber[prefix.Length..];
+            if (int.TryParse(numPart, out int parsed))
+                seq = parsed + 1;
+        }
+
+        return $"{prefix}{seq:D3}";
     }
 }

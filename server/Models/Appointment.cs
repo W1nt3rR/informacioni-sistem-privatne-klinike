@@ -22,5 +22,6 @@ public class Appointment
     public Office Office { get; set; } = null!;
     public ApplicationUser Creator { get; set; } = null!;
     public Examination? Examination { get; set; }
+    public Invoice? Invoice { get; set; }
     public ICollection<Notification> Notifications { get; set; } = [];
 }

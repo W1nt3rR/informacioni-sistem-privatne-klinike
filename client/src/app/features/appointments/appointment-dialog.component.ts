@@ -58,7 +58,7 @@ export interface AppointmentDialogData {
         <fieldset class="fieldset">
           <legend class="fieldset-legend">Datum</legend>
           <input type="date" class="input w-full" formControlName="date"
-                 (change)="onDoctorOrDateChange()" />
+                 [min]="today" (change)="onDoctorOrDateChange()" />
         </fieldset>
         <fieldset class="fieldset">
           <legend class="fieldset-legend">Ordinacija</legend>
@@ -116,6 +116,7 @@ export class AppointmentDialogComponent implements OnInit {
   slotsLoaded = signal(false);
   selectedPatientName = signal('');
   selectedSlot = signal<string | null>(null);
+  today = new Date().toISOString().slice(0, 10);
   private search$ = new Subject<string>();
 
   form = this.fb.nonNullable.group({

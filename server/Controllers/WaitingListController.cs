@@ -141,6 +141,9 @@ public class WaitingListController(AppDbContext db) : ControllerBase
         var trajanje = service.TrajanjeMinuta;
         var kraj = req.DatumVreme.AddMinutes(trajanje);
 
+        if (req.DatumVreme < DateTime.Now)
+            return BadRequest(new { message = "Ne možete zakazati termin u prošlosti." });
+
         // Conflict: non-working day
         var dateOnly = DateOnly.FromDateTime(req.DatumVreme);
         var isNonWorking = await db.NonWorkingDays.AnyAsync(n => n.Datum == dateOnly);
@@ -189,6 +192,49 @@ public class WaitingListController(AppDbContext db) : ControllerBase
         item.Status = "zakazan";
         await db.SaveChangesAsync();
 
+        // Auto-create invoice for converted appointment
+        var brojRacuna = await GenerateBrojRacuna();
+        var invoice = new Invoice
+        {
+            PatientId = item.PatientId,
+            AppointmentId = appointment.AppointmentId,
+            BrojRacuna = brojRacuna,
+            PopustProcenat = 0,
+            DatumIzdavanja = DateTime.UtcNow,
+        };
+        var lineTotal = service.Cena;
+        invoice.Items.Add(new InvoiceItem
+        {
+            ServiceId = service.ServiceId,
+            JedinicnaCena = service.Cena,
+            Kolicina = 1,
+            PopustProcenat = 0,
+            Iznos = lineTotal,
+        });
+        invoice.UkupanIznos = lineTotal;
+        invoice.IznosZaNaplatu = lineTotal;
+        db.Invoices.Add(invoice);
+        await db.SaveChangesAsync();
+
         return Ok(new { message = "Termin uspešno zakazan sa liste čekanja.", appointmentId = appointment.AppointmentId });
+    }
+
+    private async Task<string> GenerateBrojRacuna()
+    {
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        var prefix = $"RN-{today}-";
+        var lastNumber = await db.Invoices
+            .Where(i => i.BrojRacuna.StartsWith(prefix))
+            .OrderByDescending(i => i.BrojRacuna)
+            .Select(i => i.BrojRacuna)
+            .FirstOrDefaultAsync();
+        int seq = 1;
+        if (lastNumber is not null)
+        {
+            var numPart = lastNumber[prefix.Length..];
+            if (int.TryParse(numPart, out int parsed))
+                seq = parsed + 1;
+        }
+        return $"{prefix}{seq:D3}";
     }
 }
