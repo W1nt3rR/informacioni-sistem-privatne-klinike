@@ -66,10 +66,13 @@
         <button mat-icon-button [matMenuTriggerFor]="userMenu">
           <mat-icon>account_circle</mat-icon>
         </button>
+        @if (user()) {
+          <span class="text-sm text-slate-600 hidden sm:inline">{{ user()!.ime }} {{ user()!.prezime }}</span>
+        }
         <mat-menu #userMenu="matMenu">
           <button mat-menu-item disabled>
             <mat-icon>person</mat-icon>
-            <span>Korisnik</span>
+            <span>{{ user()?.userName }}</span>
           </button>
           <button mat-menu-item (click)="logout()">
             <mat-icon>logout</mat-icon>

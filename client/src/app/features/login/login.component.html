@@ -1,0 +1,53 @@
+<div class="min-h-screen flex items-center justify-center bg-slate-100">
+  <mat-card class="w-full max-w-md p-8">
+    <div class="text-center mb-8">
+      <mat-icon class="text-blue-500 mb-2" style="font-size: 48px; width: 48px; height: 48px;">local_hospital</mat-icon>
+      <h1 class="text-2xl font-bold text-slate-800 m-0">IS Privatne Klinike</h1>
+      <p class="text-slate-500 mt-1">Prijavite se na sistem</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+      <mat-form-field appearance="outline">
+        <mat-label>Korisničko ime</mat-label>
+        <input matInput [(ngModel)]="userName" name="userName" required autocomplete="username" />
+        <mat-icon matPrefix>person</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Lozinka</mat-label>
+        <input
+          matInput
+          [(ngModel)]="password"
+          name="password"
+          [type]="hidePassword() ? 'password' : 'text'"
+          required
+          autocomplete="current-password"
+        />
+        <mat-icon matPrefix>lock</mat-icon>
+        <button mat-icon-button matSuffix type="button" (click)="hidePassword.update(v => !v)">
+          <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+      </mat-form-field>
+
+      @if (errorMessage()) {
+        <div class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-200">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        [disabled]="loading() || !userName || !password"
+        class="h-12"
+      >
+        @if (loading()) {
+          <mat-spinner diameter="20" />
+        } @else {
+          Prijavi se
+        }
+      </button>
+    </form>
+  </mat-card>
+</div>
