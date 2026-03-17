@@ -1,14 +1,10 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from '../auth/auth.service';
 import { ApiService } from '../../shared/services/api.service';
+import { DialogService } from '../../shared/services/dialog.service';
+import { ThemeService } from '../../shared/services/theme.service';
+import { SettingsDialogComponent } from '../../shared/components/settings-dialog.component';
 
 interface NavItem {
   label: string;
@@ -25,17 +21,15 @@ interface NavGroup {
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [
-    RouterOutlet, RouterLink, RouterLinkActive,
-    MatSidenavModule, MatToolbarModule, MatListModule,
-    MatIconModule, MatButtonModule, MatTooltipModule, MatMenuModule,
-  ],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './layout.component.html',
-  styleUrl: './layout.component.scss',
+  styles: [`:host { display: block; height: 100%; }`],
 })
 export class LayoutComponent implements OnInit {
   private authService = inject(AuthService);
   private api = inject(ApiService);
+  private dialog = inject(DialogService);
+  themeService = inject(ThemeService);
 
   sidenavOpened = signal(true);
   user = this.authService.user;
@@ -112,6 +106,14 @@ export class LayoutComponent implements OnInit {
 
   toggleSidenav(): void {
     this.sidenavOpened.update(v => !v);
+  }
+
+  toggleMode(): void {
+    this.themeService.toggleMode();
+  }
+
+  openSettings(): void {
+    this.dialog.open(SettingsDialogComponent);
   }
 
   logout(): void {

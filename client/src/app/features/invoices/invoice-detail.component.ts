@@ -1,13 +1,8 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '../../shared/services/api.service';
+import { DialogService } from '../../shared/services/dialog.service';
 import { InvoiceDetail } from './invoice.model';
 import { PaymentDialogComponent } from './payment-dialog.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
@@ -15,77 +10,73 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatTableModule, MatButtonModule, MatIconModule, MatChipsModule],
+  imports: [CommonModule],
   template: `
     @if (invoice(); as inv) {
-      <div class="p-6 max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h1 class="text-2xl font-bold">Račun {{ inv.brojRacuna }}</h1>
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-semibold">Račun {{ inv.brojRacuna }}</h2>
           <div class="flex gap-2">
             @if (inv.statusNaplate !== 'placeno') {
-              <button mat-raised-button color="primary" (click)="openPayment()">
-                <mat-icon>payment</mat-icon> Uplata
+              <button class="btn btn-primary btn-sm" (click)="openPayment()">
+                <span class="material-icons text-sm">payment</span> Uplata
               </button>
             }
-            <button mat-raised-button (click)="printInvoice()">
-              <mat-icon>print</mat-icon> Štampaj
+            <button class="btn btn-sm" (click)="printInvoice()">
+              <span class="material-icons text-sm">print</span> Štampaj
             </button>
           </div>
         </div>
 
         <!-- Header Info -->
-        <mat-card class="mb-4">
-          <mat-card-content class="grid grid-cols-2 gap-4 p-4">
+        <div class="card bg-base-100 shadow-sm mb-4">
+          <div class="card-body grid grid-cols-2 gap-4">
             <div>
-              <p class="text-sm text-gray-500">Pacijent</p>
+              <p class="text-sm text-base-content/60">Pacijent</p>
               <p class="font-medium">{{ inv.patientIme }} {{ inv.patientPrezime }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">Datum izdavanja</p>
+              <p class="text-sm text-base-content/60">Datum izdavanja</p>
               <p class="font-medium">{{ inv.datumIzdavanja | date:'dd.MM.yyyy. HH:mm' }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">Status</p>
-              <span class="px-2 py-1 rounded text-xs font-medium"
-                [class.bg-red-100]="inv.statusNaplate === 'neplaceno'"
-                [class.text-red-700]="inv.statusNaplate === 'neplaceno'"
-                [class.bg-yellow-100]="inv.statusNaplate === 'delimicno'"
-                [class.text-yellow-700]="inv.statusNaplate === 'delimicno'"
-                [class.bg-green-100]="inv.statusNaplate === 'placeno'"
-                [class.text-green-700]="inv.statusNaplate === 'placeno'">
+              <p class="text-sm text-base-content/60">Status</p>
+              <span class="badge" [ngClass]="statusBadge(inv.statusNaplate)">
                 {{ inv.statusNaplate === 'neplaceno' ? 'Neplaćeno' :
                    inv.statusNaplate === 'delimicno' ? 'Delimično' : 'Plaćeno' }}
               </span>
             </div>
             <div>
-              <p class="text-sm text-gray-500">Napomena</p>
+              <p class="text-sm text-base-content/60">Napomena</p>
               <p class="font-medium">{{ inv.napomena || '—' }}</p>
             </div>
-          </mat-card-content>
-        </mat-card>
+          </div>
+        </div>
 
         <!-- Items -->
         <h2 class="text-lg font-semibold mb-2">Stavke</h2>
-        <table mat-table [dataSource]="inv.items" class="w-full mb-4">
-          <ng-container matColumnDef="service">
-            <th mat-header-cell *matHeaderCellDef>Usluga</th>
-            <td mat-cell *matCellDef="let it">{{ it.serviceNaziv }}</td>
-          </ng-container>
-          <ng-container matColumnDef="cena">
-            <th mat-header-cell *matHeaderCellDef>Jed. cena</th>
-            <td mat-cell *matCellDef="let it">{{ it.jedinicnaCena | number:'1.2-2' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="kolicina">
-            <th mat-header-cell *matHeaderCellDef>Količina</th>
-            <td mat-cell *matCellDef="let it">{{ it.kolicina }}</td>
-          </ng-container>
-          <ng-container matColumnDef="iznos">
-            <th mat-header-cell *matHeaderCellDef>Iznos</th>
-            <td mat-cell *matCellDef="let it">{{ it.iznos | number:'1.2-2' }}</td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="itemColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: itemColumns;"></tr>
-        </table>
+        <div class="overflow-x-auto mb-4">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Usluga</th>
+                <th>Jed. cena</th>
+                <th>Količina</th>
+                <th>Iznos</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (it of inv.items; track it.invoiceItemId) {
+                <tr>
+                  <td>{{ it.serviceNaziv }}</td>
+                  <td>{{ it.jedinicnaCena | number:'1.2-2' }}</td>
+                  <td>{{ it.kolicina }}</td>
+                  <td>{{ it.iznos | number:'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
 
         <!-- Totals -->
         <div class="text-right mb-6">
@@ -94,7 +85,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
             <p>Popust: {{ inv.popustProcenat }}%</p>
           }
           <p class="text-lg">Za naplatu: <strong>{{ inv.iznosZaNaplatu | number:'1.2-2' }} RSD</strong></p>
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-base-content/60">
             Plaćeno: {{ paidTotal() | number:'1.2-2' }} RSD |
             Preostalo: {{ inv.iznosZaNaplatu - paidTotal() | number:'1.2-2' }} RSD
           </p>
@@ -103,31 +94,31 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
         <!-- Payments -->
         <h2 class="text-lg font-semibold mb-2">Uplate</h2>
         @if (inv.payments.length > 0) {
-          <table mat-table [dataSource]="inv.payments" class="w-full">
-            <ng-container matColumnDef="datum">
-              <th mat-header-cell *matHeaderCellDef>Datum</th>
-              <td mat-cell *matCellDef="let p">{{ p.datumPlacanja | date:'dd.MM.yyyy. HH:mm' }}</td>
-            </ng-container>
-            <ng-container matColumnDef="iznos">
-              <th mat-header-cell *matHeaderCellDef>Iznos</th>
-              <td mat-cell *matCellDef="let p">{{ p.iznos | number:'1.2-2' }} RSD</td>
-            </ng-container>
-            <ng-container matColumnDef="nacin">
-              <th mat-header-cell *matHeaderCellDef>Način plaćanja</th>
-              <td mat-cell *matCellDef="let p">
-                {{ p.nacinPlacanja === 'gotovina' ? 'Gotovina' :
-                   p.nacinPlacanja === 'kartica' ? 'Kartica' : 'Virman' }}
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="napomena">
-              <th mat-header-cell *matHeaderCellDef>Napomena</th>
-              <td mat-cell *matCellDef="let p">{{ p.napomena || '—' }}</td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="paymentColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: paymentColumns;"></tr>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Datum</th>
+                  <th>Iznos</th>
+                  <th>Način plaćanja</th>
+                  <th>Napomena</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of inv.payments; track p.paymentId) {
+                  <tr>
+                    <td>{{ p.datumPlacanja | date:'dd.MM.yyyy. HH:mm' }}</td>
+                    <td>{{ p.iznos | number:'1.2-2' }} RSD</td>
+                    <td>{{ p.nacinPlacanja === 'gotovina' ? 'Gotovina' :
+                           p.nacinPlacanja === 'kartica' ? 'Kartica' : 'Virman' }}</td>
+                    <td>{{ p.napomena || '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         } @else {
-          <p class="text-gray-500">Nema evidentiranih uplata</p>
+          <p class="text-base-content/60">Nema evidentiranih uplata</p>
         }
       </div>
     }
@@ -136,11 +127,9 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
 export class InvoiceDetailComponent implements OnInit {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
-  private dialog = inject(MatDialog);
+  private dialogService = inject(DialogService);
 
   invoice = signal<InvoiceDetail | null>(null);
-  itemColumns = ['service', 'cena', 'kolicina', 'iznos'];
-  paymentColumns = ['datum', 'iznos', 'nacin', 'napomena'];
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -159,8 +148,8 @@ export class InvoiceDetailComponent implements OnInit {
     const inv = this.invoice();
     if (!inv) return;
     const remaining = inv.iznosZaNaplatu - this.paidTotal();
-    this.dialog.open(PaymentDialogComponent, { width: '400px', data: { remaining } })
-      .afterClosed().subscribe(result => {
+    this.dialogService.open(PaymentDialogComponent, { remaining })
+      .afterClosed.subscribe(result => {
         if (result) {
           this.api.post<any>(`invoices/${inv.invoiceId}/payments`, result)
             .subscribe(() => this.loadInvoice(inv.invoiceId));
@@ -170,5 +159,14 @@ export class InvoiceDetailComponent implements OnInit {
 
   printInvoice() {
     window.print();
+  }
+
+  statusBadge(status: string): string {
+    switch (status) {
+      case 'neplaceno': return 'badge-error';
+      case 'delimicno': return 'badge-warning';
+      case 'placeno': return 'badge-success';
+      default: return 'badge-info';
+    }
   }
 }

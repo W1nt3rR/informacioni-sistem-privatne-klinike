@@ -1,99 +1,88 @@
 import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDatepickerModule } from '@angular/material/datepicker';
+import { DialogRef, DIALOG_DATA } from '../../shared/services/dialog.service';
+import { ToastService } from '../../shared/services/toast.service';
 import { ApiService } from '../../shared/services/api.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Patient } from './patient.model';
 
 @Component({
   selector: 'app-patient-dialog',
   standalone: true,
-  imports: [
-    ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatSelectModule, MatDatepickerModule,
-  ],
+  imports: [ReactiveFormsModule],
   template: `
-    <h2 mat-dialog-title>{{ data ? 'Izmeni pacijenta' : 'Novi pacijent' }}</h2>
+    <h3 class="font-bold text-lg">{{ data ? 'Izmeni pacijenta' : 'Novi pacijent' }}</h3>
     <form [formGroup]="form" (ngSubmit)="save()">
-      <mat-dialog-content class="flex flex-col gap-3">
-        <div class="grid grid-cols-2 gap-3">
-          <mat-form-field>
-            <mat-label>Ime</mat-label>
-            <input matInput formControlName="ime" />
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>Prezime</mat-label>
-            <input matInput formControlName="prezime" />
-          </mat-form-field>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <mat-form-field>
-            <mat-label>JMBG</mat-label>
-            <input matInput formControlName="jmbg" maxlength="13" />
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>Pol</mat-label>
-            <mat-select formControlName="pol">
-              <mat-option value="M">Muški</mat-option>
-              <mat-option value="Ž">Ženski</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-        <mat-form-field>
-          <mat-label>Datum rođenja</mat-label>
-          <input matInput [matDatepicker]="picker" formControlName="datumRodjenja" />
-          <mat-datepicker-toggle matIconSuffix [for]="picker" />
-          <mat-datepicker #picker />
-        </mat-form-field>
-        <div class="grid grid-cols-2 gap-3">
-          <mat-form-field>
-            <mat-label>Telefon</mat-label>
-            <input matInput formControlName="telefon" />
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" />
-          </mat-form-field>
-        </div>
-        <mat-form-field>
-          <mat-label>Adresa</mat-label>
-          <input matInput formControlName="adresa" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Broj osiguranja</mat-label>
-          <input matInput formControlName="brojOsiguranja" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Napomene</mat-label>
-          <textarea matInput formControlName="napomene" rows="2"></textarea>
-        </mat-form-field>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Otkaži</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
+      <div class="grid grid-cols-2 gap-3">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Ime</legend>
+          <input class="input w-full" formControlName="ime" />
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Prezime</legend>
+          <input class="input w-full" formControlName="prezime" />
+        </fieldset>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">JMBG</legend>
+          <input class="input w-full" formControlName="jmbg" maxlength="13" />
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Pol</legend>
+          <select class="select w-full" formControlName="pol">
+            <option value="" disabled>Izaberite</option>
+            <option value="M">Muški</option>
+            <option value="Ž">Ženski</option>
+          </select>
+        </fieldset>
+      </div>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Datum rođenja</legend>
+        <input type="date" class="input w-full" formControlName="datumRodjenja" />
+      </fieldset>
+      <div class="grid grid-cols-2 gap-3">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Telefon</legend>
+          <input class="input w-full" formControlName="telefon" />
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Email</legend>
+          <input type="email" class="input w-full" formControlName="email" />
+        </fieldset>
+      </div>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Adresa</legend>
+        <input class="input w-full" formControlName="adresa" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Broj osiguranja</legend>
+        <input class="input w-full" formControlName="brojOsiguranja" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Napomene</legend>
+        <textarea class="textarea w-full" formControlName="napomene" rows="2"></textarea>
+      </fieldset>
+      <div class="modal-action">
+        <button class="btn" type="button" (click)="dialogRef.close()">Otkaži</button>
+        <button class="btn btn-primary" type="submit" [disabled]="form.invalid">
           {{ data ? 'Sačuvaj' : 'Kreiraj' }}
         </button>
-      </mat-dialog-actions>
+      </div>
     </form>
   `,
 })
 export class PatientDialogComponent {
-  data = inject<Patient | null>(MAT_DIALOG_DATA);
-  private dialogRef = inject(MatDialogRef<PatientDialogComponent>);
+  data = inject<Patient | null>(DIALOG_DATA);
+  dialogRef = inject(DialogRef);
   private api = inject(ApiService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(ToastService);
   private fb = inject(FormBuilder);
 
   form = this.fb.nonNullable.group({
     ime: [this.data?.ime ?? '', Validators.required],
     prezime: [this.data?.prezime ?? '', Validators.required],
     jmbg: [this.data?.jmbg ?? '', [Validators.required, Validators.minLength(13), Validators.maxLength(13)]],
-    datumRodjenja: [this.data ? new Date(this.data.datumRodjenja) : null as Date | null, Validators.required],
+    datumRodjenja: [this.data?.datumRodjenja ?? '', Validators.required],
     pol: [this.data?.pol ?? '', Validators.required],
     telefon: [this.data?.telefon ?? '', Validators.required],
     email: [this.data?.email ?? ''],
@@ -107,7 +96,6 @@ export class PatientDialogComponent {
     const val = this.form.getRawValue();
     const body = {
       ...val,
-      datumRodjenja: this.formatDate(val.datumRodjenja!),
       email: val.email || null,
       adresa: val.adresa || null,
       brojOsiguranja: val.brojOsiguranja || null,
@@ -120,17 +108,10 @@ export class PatientDialogComponent {
 
     req$.subscribe({
       next: () => {
-        this.snackBar.open(this.data ? 'Pacijent ažuriran' : 'Pacijent kreiran', 'OK', { duration: 2000 });
+        this.toast.success(this.data ? 'Pacijent ažuriran' : 'Pacijent kreiran');
         this.dialogRef.close(true);
       },
-      error: () => this.snackBar.open('Greška pri čuvanju', 'OK', { duration: 3000 }),
+      error: () => this.toast.error('Greška pri čuvanju'),
     });
-  }
-
-  private formatDate(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
   }
 }

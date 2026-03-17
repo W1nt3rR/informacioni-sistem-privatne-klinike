@@ -1,15 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../../shared/services/api.service';
+import { DialogService } from '../../shared/services/dialog.service';
+import { ToastService } from '../../shared/services/toast.service';
 import { Diagnosis } from './diagnosis.model';
 import { DiagnosisDialogComponent } from './diagnosis-dialog.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
@@ -17,61 +10,62 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
 @Component({
   selector: 'app-diagnosis-list',
   standalone: true,
-  imports: [
-    FormsModule, MatTableModule, MatButtonModule, MatIconModule,
-    MatFormFieldModule, MatInputModule, MatTooltipModule, MatProgressSpinnerModule,
-  ],
+  imports: [FormsModule],
   template: `
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold text-slate-800 m-0">Dijagnoze</h2>
-      <button mat-flat-button color="primary" (click)="openDialog()">
-        <mat-icon>add</mat-icon> Dodaj
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-semibold">Dijagnoze</h2>
+      <button class="btn btn-primary btn-sm" (click)="openDialog()">
+        <span class="material-icons text-sm">add</span> Dodaj
       </button>
     </div>
 
-    <mat-form-field class="w-full mb-4" appearance="outline">
-      <mat-label>Pretraga (šifra ili naziv)</mat-label>
-      <input matInput [(ngModel)]="searchTerm" (input)="onSearch()" />
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
+    <label class="input w-full mb-4">
+      <span class="material-icons">search</span>
+      <input placeholder="Pretraga (šifra ili naziv)" [(ngModel)]="searchTerm" (input)="onSearch()" />
+    </label>
 
     @if (loading()) {
       <div class="flex justify-center py-12">
-        <mat-spinner diameter="40" />
+        <span class="loading loading-spinner loading-md"></span>
       </div>
     } @else {
-      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <table mat-table [dataSource]="items()" class="w-full">
-          <ng-container matColumnDef="sifra">
-            <th mat-header-cell *matHeaderCellDef>Šifra</th>
-            <td mat-cell *matCellDef="let row">{{ row.sifra }}</td>
-          </ng-container>
-          <ng-container matColumnDef="naziv">
-            <th mat-header-cell *matHeaderCellDef>Naziv</th>
-            <td mat-cell *matCellDef="let row">{{ row.naziv }}</td>
-          </ng-container>
-          <ng-container matColumnDef="opis">
-            <th mat-header-cell *matHeaderCellDef>Opis</th>
-            <td mat-cell *matCellDef="let row">{{ row.opis ?? '—' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef class="w-24">Akcije</th>
-            <td mat-cell *matCellDef="let row">
-              <button mat-icon-button matTooltip="Izmeni" (click)="openDialog(row)">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button mat-icon-button matTooltip="Obriši" color="warn" (click)="deleteItem(row)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      <div class="card bg-base-100 shadow-sm overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Šifra</th>
+              <th>Naziv</th>
+              <th>Opis</th>
+              <th class="w-24">Akcije</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of items(); track row.diagnosisId) {
+              <tr>
+                <td>{{ row.sifra }}</td>
+                <td>{{ row.naziv }}</td>
+                <td>{{ row.opis ?? '—' }}</td>
+                <td>
+                  <div class="flex gap-1">
+                    <div class="tooltip" data-tip="Izmeni">
+                      <button class="btn btn-ghost btn-xs btn-square" (click)="openDialog(row)">
+                        <span class="material-icons text-sm">edit</span>
+                      </button>
+                    </div>
+                    <div class="tooltip" data-tip="Obriši">
+                      <button class="btn btn-ghost btn-xs btn-square text-error" (click)="deleteItem(row)">
+                        <span class="material-icons text-sm">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
         </table>
 
         @if (items().length === 0) {
-          <div class="text-center text-slate-400 py-8">Nema dijagnoza.</div>
+          <div class="text-center text-base-content/60 py-8">Nema dijagnoza.</div>
         }
       </div>
     }
@@ -79,13 +73,12 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
 })
 export class DiagnosisListComponent implements OnInit {
   private api = inject(ApiService);
-  private dialog = inject(MatDialog);
-  private snackBar = inject(MatSnackBar);
+  private dialogService = inject(DialogService);
+  private toast = inject(ToastService);
 
   items = signal<Diagnosis[]>([]);
   loading = signal(true);
   searchTerm = '';
-  columns = ['sifra', 'naziv', 'opis', 'actions'];
 
   private searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -109,28 +102,26 @@ export class DiagnosisListComponent implements OnInit {
   }
 
   openDialog(item?: Diagnosis): void {
-    const ref = this.dialog.open(DiagnosisDialogComponent, { data: item ?? null });
-    ref.afterClosed().subscribe(result => {
+    const ref = this.dialogService.open(DiagnosisDialogComponent, item ?? null);
+    ref.afterClosed.subscribe(result => {
       if (!result) return;
       const op = item
         ? this.api.put(`diagnoses/${item.diagnosisId}`, result)
         : this.api.post('diagnoses', result);
       op.subscribe({
-        next: () => { this.snackBar.open(item ? 'Izmenjeno' : 'Dodato', 'OK', { duration: 2000 }); this.load(); },
-        error: () => this.snackBar.open('Greška pri čuvanju', 'OK', { duration: 3000 }),
+        next: () => { this.toast.success(item ? 'Izmenjeno' : 'Dodato'); this.load(); },
+        error: () => this.toast.error('Greška pri čuvanju'),
       });
     });
   }
 
   deleteItem(item: Diagnosis): void {
-    const ref = this.dialog.open(ConfirmDialogComponent, {
-      data: { title: 'Brisanje', message: `Obrisati dijagnozu "${item.sifra} — ${item.naziv}"?` },
-    });
-    ref.afterClosed().subscribe(confirmed => {
+    const ref = this.dialogService.open(ConfirmDialogComponent, { title: 'Brisanje', message: `Obrisati dijagnozu "${item.sifra} — ${item.naziv}"?` });
+    ref.afterClosed.subscribe(confirmed => {
       if (!confirmed) return;
       this.api.delete(`diagnoses/${item.diagnosisId}`).subscribe({
-        next: () => { this.snackBar.open('Obrisano', 'OK', { duration: 2000 }); this.load(); },
-        error: () => this.snackBar.open('Greška pri brisanju', 'OK', { duration: 3000 }),
+        next: () => { this.toast.success('Obrisano'); this.load(); },
+        error: () => this.toast.error('Greška pri brisanju'),
       });
     });
   }

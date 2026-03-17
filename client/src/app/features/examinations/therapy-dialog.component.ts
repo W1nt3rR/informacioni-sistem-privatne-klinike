@@ -1,56 +1,52 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
+import { DialogRef } from '../../shared/services/dialog.service';
 
 @Component({
   selector: 'app-therapy-dialog',
   standalone: true,
-  imports: [FormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [FormsModule],
   template: `
-    <h2 mat-dialog-title>Dodaj terapiju</h2>
-    <mat-dialog-content class="flex flex-col gap-3">
-      <mat-form-field>
-        <mat-label>Naziv leka</mat-label>
-        <input matInput [(ngModel)]="nazivLeka" required>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Doza</mat-label>
-        <input matInput [(ngModel)]="doza" required>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Učestalost</mat-label>
-        <input matInput [(ngModel)]="ucestalost" required placeholder="npr. 3x dnevno">
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Trajanje</mat-label>
-        <input matInput [(ngModel)]="trajanje" required placeholder="npr. 7 dana">
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Napomena</mat-label>
-        <textarea matInput [(ngModel)]="napomena" rows="2"></textarea>
-      </mat-form-field>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Otkaži</button>
-      <button mat-raised-button color="primary" (click)="save()"
+    <h3 class="font-bold text-lg">Dodaj terapiju</h3>
+    <div class="mt-4 space-y-3">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Naziv leka</legend>
+        <input class="input w-full" [(ngModel)]="nazivLeka" required />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Doza</legend>
+        <input class="input w-full" [(ngModel)]="doza" required />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Učestalost</legend>
+        <input class="input w-full" [(ngModel)]="ucestalost" required placeholder="npr. 3x dnevno" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Trajanje</legend>
+        <input class="input w-full" [(ngModel)]="trajanje" required placeholder="npr. 7 dana" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Napomena</legend>
+        <textarea class="textarea w-full" [(ngModel)]="napomena" rows="2"></textarea>
+      </fieldset>
+    </div>
+    <div class="modal-action">
+      <button class="btn" (click)="ref.close()">Otkaži</button>
+      <button class="btn btn-primary" (click)="save()"
         [disabled]="!nazivLeka || !doza || !ucestalost || !trajanje">Dodaj</button>
-    </mat-dialog-actions>
+    </div>
   `
 })
 export class TherapyDialogComponent {
+  ref = inject(DialogRef);
   nazivLeka = '';
   doza = '';
   ucestalost = '';
   trajanje = '';
   napomena = '';
 
-  constructor(private dialogRef: MatDialogRef<TherapyDialogComponent>) {}
-
   save() {
-    this.dialogRef.close({
+    this.ref.close({
       nazivLeka: this.nazivLeka,
       doza: this.doza,
       ucestalost: this.ucestalost,

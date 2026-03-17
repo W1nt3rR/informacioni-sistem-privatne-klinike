@@ -1,10 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
+import { DialogRef, DIALOG_DATA } from '../../shared/services/dialog.service';
 import { ApiService } from '../../shared/services/api.service';
 
 interface Specialization {
@@ -15,46 +11,47 @@ interface Specialization {
 @Component({
   selector: 'app-service-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatSelectModule],
+  imports: [ReactiveFormsModule],
   template: `
-    <h2 mat-dialog-title>{{ data ? 'Izmeni uslugu' : 'Nova usluga' }}</h2>
-    <mat-dialog-content class="flex flex-col gap-3 min-w-[400px]">
-      <mat-form-field>
-        <mat-label>Naziv</mat-label>
-        <input matInput [formControl]="form.controls.naziv" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Opis</mat-label>
-        <textarea matInput [formControl]="form.controls.opis" rows="2"></textarea>
-      </mat-form-field>
+    <h3 class="font-bold text-lg">{{ data ? 'Izmeni uslugu' : 'Nova usluga' }}</h3>
+    <div class="mt-4 space-y-3">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Naziv</legend>
+        <input class="input w-full" [formControl]="form.controls.naziv" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Opis</legend>
+        <textarea class="textarea w-full" [formControl]="form.controls.opis" rows="2"></textarea>
+      </fieldset>
       <div class="flex gap-3">
-        <mat-form-field class="flex-1">
-          <mat-label>Trajanje (min)</mat-label>
-          <input matInput type="number" [formControl]="form.controls.trajanjeMinuta" />
-        </mat-form-field>
-        <mat-form-field class="flex-1">
-          <mat-label>Cena (RSD)</mat-label>
-          <input matInput type="number" [formControl]="form.controls.cena" />
-        </mat-form-field>
+        <fieldset class="fieldset flex-1">
+          <legend class="fieldset-legend">Trajanje (min)</legend>
+          <input class="input w-full" type="number" [formControl]="form.controls.trajanjeMinuta" />
+        </fieldset>
+        <fieldset class="fieldset flex-1">
+          <legend class="fieldset-legend">Cena (RSD)</legend>
+          <input class="input w-full" type="number" [formControl]="form.controls.cena" />
+        </fieldset>
       </div>
-      <mat-form-field>
-        <mat-label>Specijalizacija</mat-label>
-        <mat-select [formControl]="form.controls.specializationId">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Specijalizacija</legend>
+        <select class="select w-full" [formControl]="form.controls.specializationId">
+          <option [value]="0" disabled>Izaberi</option>
           @for (s of specializations(); track s.specializationId) {
-            <mat-option [value]="s.specializationId">{{ s.naziv }}</mat-option>
+            <option [value]="s.specializationId">{{ s.naziv }}</option>
           }
-        </mat-select>
-      </mat-form-field>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Otkaži</button>
-      <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid">Sačuvaj</button>
-    </mat-dialog-actions>
+        </select>
+      </fieldset>
+    </div>
+    <div class="modal-action">
+      <button class="btn" (click)="ref.close()">Otkaži</button>
+      <button class="btn btn-primary" (click)="save()" [disabled]="form.invalid">Sačuvaj</button>
+    </div>
   `,
 })
 export class ServiceDialogComponent implements OnInit {
-  data = inject<any | null>(MAT_DIALOG_DATA);
-  private dialogRef = inject(MatDialogRef<ServiceDialogComponent>);
+  data = inject<any | null>(DIALOG_DATA);
+  ref = inject(DialogRef);
   private fb = inject(FormBuilder);
   private api = inject(ApiService);
 
@@ -74,6 +71,6 @@ export class ServiceDialogComponent implements OnInit {
 
   save(): void {
     if (this.form.invalid) return;
-    this.dialogRef.close(this.form.getRawValue());
+    this.ref.close(this.form.getRawValue());
   }
 }

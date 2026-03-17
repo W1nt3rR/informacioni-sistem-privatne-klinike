@@ -1,10 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
+import { DialogRef } from '../../shared/services/dialog.service';
 import { ApiService } from '../../shared/services/api.service';
 
 interface PatientOption { patientId: number; ime: string; prezime: string; }
@@ -14,67 +10,66 @@ interface DoctorOption { doctorId: number; ime: string; prezime: string; }
 @Component({
   selector: 'app-waiting-list-dialog',
   standalone: true,
-  imports: [
-    FormsModule, MatDialogModule, MatFormFieldModule,
-    MatInputModule, MatSelectModule, MatButtonModule,
-  ],
+  imports: [FormsModule],
   template: `
-    <h2 mat-dialog-title>Dodaj na listu čekanja</h2>
-    <mat-dialog-content class="flex flex-col gap-3 min-w-[400px]">
-      <mat-form-field>
-        <mat-label>Pacijent</mat-label>
-        <mat-select [(ngModel)]="model.patientId" name="patientId" required>
+    <h3 class="font-bold text-lg">Dodaj na listu čekanja</h3>
+    <div class="mt-4 flex flex-col gap-3">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Pacijent</legend>
+        <select class="select w-full" [(ngModel)]="model.patientId" name="patientId" required>
+          <option [ngValue]="null" disabled>Izaberite pacijenta</option>
           @for (p of patients(); track p.patientId) {
-            <mat-option [value]="p.patientId">{{ p.ime }} {{ p.prezime }}</mat-option>
+            <option [ngValue]="p.patientId">{{ p.ime }} {{ p.prezime }}</option>
           }
-        </mat-select>
-      </mat-form-field>
+        </select>
+      </fieldset>
 
-      <mat-form-field>
-        <mat-label>Usluga</mat-label>
-        <mat-select [(ngModel)]="model.serviceId" name="serviceId" required>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Usluga</legend>
+        <select class="select w-full" [(ngModel)]="model.serviceId" name="serviceId" required>
+          <option [ngValue]="null" disabled>Izaberite uslugu</option>
           @for (s of services(); track s.serviceId) {
-            <mat-option [value]="s.serviceId">{{ s.naziv }}</mat-option>
+            <option [ngValue]="s.serviceId">{{ s.naziv }}</option>
           }
-        </mat-select>
-      </mat-form-field>
+        </select>
+      </fieldset>
 
-      <mat-form-field>
-        <mat-label>Lekar (opciono)</mat-label>
-        <mat-select [(ngModel)]="model.doctorId" name="doctorId">
-          <mat-option [value]="null">Bilo koji</mat-option>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Lekar (opciono)</legend>
+        <select class="select w-full" [(ngModel)]="model.doctorId" name="doctorId">
+          <option [ngValue]="null">Bilo koji</option>
           @for (d of doctors(); track d.doctorId) {
-            <mat-option [value]="d.doctorId">{{ d.ime }} {{ d.prezime }}</mat-option>
+            <option [ngValue]="d.doctorId">{{ d.ime }} {{ d.prezime }}</option>
           }
-        </mat-select>
-      </mat-form-field>
+        </select>
+      </fieldset>
 
-      <mat-form-field>
-        <mat-label>Prioritet</mat-label>
-        <mat-select [(ngModel)]="model.prioritet" name="prioritet" required>
-          <mat-option [value]="1">Visok</mat-option>
-          <mat-option [value]="2">Srednji</mat-option>
-          <mat-option [value]="3">Nizak</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Prioritet</legend>
+        <select class="select w-full" [(ngModel)]="model.prioritet" name="prioritet" required>
+          <option [ngValue]="1">Visok</option>
+          <option [ngValue]="2">Srednji</option>
+          <option [ngValue]="3">Nizak</option>
+        </select>
+      </fieldset>
 
-      <mat-form-field>
-        <mat-label>Napomena</mat-label>
-        <textarea matInput [(ngModel)]="model.napomena" name="napomena" rows="2"></textarea>
-      </mat-form-field>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Otkaži</button>
-      <button mat-flat-button color="primary" (click)="save()"
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Napomena</legend>
+        <textarea class="textarea w-full" [(ngModel)]="model.napomena" name="napomena" rows="2"></textarea>
+      </fieldset>
+    </div>
+    <div class="modal-action">
+      <button class="btn" (click)="dialogRef.close(null)">Otkaži</button>
+      <button class="btn btn-primary" (click)="save()"
               [disabled]="!model.patientId || !model.serviceId">
         Dodaj
       </button>
-    </mat-dialog-actions>
+    </div>
   `,
 })
 export class WaitingListDialogComponent implements OnInit {
   private api = inject(ApiService);
-  private dialogRef = inject(MatDialogRef<WaitingListDialogComponent>);
+  dialogRef = inject(DialogRef);
 
   patients = signal<PatientOption[]>([]);
   services = signal<ServiceOption[]>([]);

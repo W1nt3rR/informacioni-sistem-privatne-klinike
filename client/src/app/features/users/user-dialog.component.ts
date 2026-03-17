@@ -1,70 +1,64 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { DIALOG_DATA, DialogRef } from '../../shared/services/dialog.service';
+import { ToastService } from '../../shared/services/toast.service';
 import { ApiService } from '../../shared/services/api.service';
 
 @Component({
   selector: 'app-user-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatFormFieldModule,
-    MatInputModule, MatSelectModule, MatButtonModule, MatSnackBarModule],
+  imports: [FormsModule],
   template: `
-    <h2 mat-dialog-title>{{ data ? 'Izmeni korisnika' : 'Novi korisnik' }}</h2>
-    <mat-dialog-content class="flex flex-col gap-3">
+    <h3 class="font-bold text-lg">{{ data ? 'Izmeni korisnika' : 'Novi korisnik' }}</h3>
+    <div class="mt-4 space-y-3">
       @if (!data) {
-        <mat-form-field>
-          <mat-label>Korisničko ime</mat-label>
-          <input matInput [(ngModel)]="form.userName" required>
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Lozinka</mat-label>
-          <input matInput type="password" [(ngModel)]="form.password" required>
-        </mat-form-field>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Korisničko ime</legend>
+          <input class="input w-full" [(ngModel)]="form.userName" required />
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Lozinka</legend>
+          <input class="input w-full" type="password" [(ngModel)]="form.password" required />
+        </fieldset>
       }
-      <mat-form-field>
-        <mat-label>Ime</mat-label>
-        <input matInput [(ngModel)]="form.ime" required>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Prezime</mat-label>
-        <input matInput [(ngModel)]="form.prezime" required>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Email</mat-label>
-        <input matInput [(ngModel)]="form.email">
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Telefon</mat-label>
-        <input matInput [(ngModel)]="form.phoneNumber">
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Uloga</mat-label>
-        <mat-select [(ngModel)]="form.role" required>
-          <mat-option value="admin">Admin</mat-option>
-          <mat-option value="recepcija">Recepcija</mat-option>
-          <mat-option value="lekar">Lekar</mat-option>
-          <mat-option value="menadzer">Menadžer</mat-option>
-          <mat-option value="pacijent">Pacijent</mat-option>
-        </mat-select>
-      </mat-form-field>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Otkaži</button>
-      <button mat-raised-button color="primary" (click)="save()">Sačuvaj</button>
-    </mat-dialog-actions>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Ime</legend>
+        <input class="input w-full" [(ngModel)]="form.ime" required />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Prezime</legend>
+        <input class="input w-full" [(ngModel)]="form.prezime" required />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Email</legend>
+        <input class="input w-full" [(ngModel)]="form.email" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Telefon</legend>
+        <input class="input w-full" [(ngModel)]="form.phoneNumber" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Uloga</legend>
+        <select class="select w-full" [(ngModel)]="form.role" required>
+          <option value="admin">Admin</option>
+          <option value="recepcija">Recepcija</option>
+          <option value="lekar">Lekar</option>
+          <option value="menadzer">Menadžer</option>
+          <option value="pacijent">Pacijent</option>
+        </select>
+      </fieldset>
+    </div>
+    <div class="modal-action">
+      <button class="btn" (click)="dialogRef.close(null)">Otkaži</button>
+      <button class="btn btn-primary" (click)="save()">Sačuvaj</button>
+    </div>
   `
 })
 export class UserDialogComponent {
-  data = inject(MAT_DIALOG_DATA) as any;
+  data = inject(DIALOG_DATA) as any;
   private api = inject(ApiService);
-  private dialogRef = inject(MatDialogRef<UserDialogComponent>);
-  private snack = inject(MatSnackBar);
+  dialogRef = inject(DialogRef);
+  private toast = inject(ToastService);
 
   form: any = {
     userName: '',
@@ -85,8 +79,8 @@ export class UserDialogComponent {
         phoneNumber: this.form.phoneNumber || null,
         role: this.form.role,
       }).subscribe({
-        next: () => { this.snack.open('Korisnik ažuriran', 'OK', { duration: 2000 }); this.dialogRef.close(true); },
-        error: () => this.snack.open('Greška pri ažuriranju', 'OK', { duration: 3000 }),
+        next: () => { this.toast.success('Korisnik ažuriran'); this.dialogRef.close(true); },
+        error: () => this.toast.error('Greška pri ažuriranju'),
       });
     } else {
       this.api.post('users', {
@@ -98,8 +92,8 @@ export class UserDialogComponent {
         phoneNumber: this.form.phoneNumber || null,
         role: this.form.role,
       }).subscribe({
-        next: () => { this.snack.open('Korisnik kreiran', 'OK', { duration: 2000 }); this.dialogRef.close(true); },
-        error: () => this.snack.open('Greška pri kreiranju', 'OK', { duration: 3000 }),
+        next: () => { this.toast.success('Korisnik kreiran'); this.dialogRef.close(true); },
+        error: () => this.toast.error('Greška pri kreiranju'),
       });
     }
   }

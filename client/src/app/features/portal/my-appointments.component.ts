@@ -1,11 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTabsModule } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../shared/services/api.service';
 
@@ -21,100 +15,73 @@ interface PortalAppointment {
 @Component({
   selector: 'app-my-appointments',
   standalone: true,
-  imports: [
-    DatePipe, MatCardModule, MatTableModule, MatChipsModule,
-    MatButtonModule, MatIconModule, MatTabsModule, RouterLink,
-  ],
+  imports: [DatePipe, RouterLink],
   template: `
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-semibold text-slate-800 m-0">Moji termini</h2>
-      <a mat-flat-button color="primary" routerLink="/portal/request-appointment">
-        <mat-icon>add</mat-icon> Zakaži termin
+      <h2 class="text-2xl font-semibold m-0">Moji termini</h2>
+      <a routerLink="/portal/request-appointment" class="btn btn-primary">
+        <span class="material-icons text-sm">add</span> Zakaži termin
       </a>
     </div>
 
-    <mat-card>
-      <mat-card-content>
-        <mat-tab-group>
-          <mat-tab label="Predstojeći">
-            <div class="mt-4">
-              @if (upcoming().length === 0) {
-                <p class="text-slate-500 text-center py-8">Nemate zakazane termine.</p>
-              } @else {
-                <table mat-table [dataSource]="upcoming()" class="w-full">
-                  <ng-container matColumnDef="datumVreme">
-                    <th mat-header-cell *matHeaderCellDef>Datum i vreme</th>
-                    <td mat-cell *matCellDef="let a">{{ a.datumVreme | date:'dd.MM.yyyy HH:mm' }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="serviceName">
-                    <th mat-header-cell *matHeaderCellDef>Usluga</th>
-                    <td mat-cell *matCellDef="let a">{{ a.serviceName }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="doctorName">
-                    <th mat-header-cell *matHeaderCellDef>Lekar</th>
-                    <td mat-cell *matCellDef="let a">{{ a.doctorName }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="trajanjeMinuta">
-                    <th mat-header-cell *matHeaderCellDef>Trajanje</th>
-                    <td mat-cell *matCellDef="let a">{{ a.trajanjeMinuta }} min</td>
-                  </ng-container>
-                  <ng-container matColumnDef="status">
-                    <th mat-header-cell *matHeaderCellDef>Status</th>
-                    <td mat-cell *matCellDef="let a">
-                      <mat-chip [class]="statusClass(a.status)">{{ statusLabel(a.status) }}</mat-chip>
-                    </td>
-                  </ng-container>
-                  <tr mat-header-row *matHeaderRowDef="columns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: columns"></tr>
-                </table>
-              }
-            </div>
-          </mat-tab>
-          <mat-tab label="Prošli">
-            <div class="mt-4">
-              @if (past().length === 0) {
-                <p class="text-slate-500 text-center py-8">Nema prošlih termina.</p>
-              } @else {
-                <table mat-table [dataSource]="past()" class="w-full">
-                  <ng-container matColumnDef="datumVreme">
-                    <th mat-header-cell *matHeaderCellDef>Datum i vreme</th>
-                    <td mat-cell *matCellDef="let a">{{ a.datumVreme | date:'dd.MM.yyyy HH:mm' }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="serviceName">
-                    <th mat-header-cell *matHeaderCellDef>Usluga</th>
-                    <td mat-cell *matCellDef="let a">{{ a.serviceName }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="doctorName">
-                    <th mat-header-cell *matHeaderCellDef>Lekar</th>
-                    <td mat-cell *matCellDef="let a">{{ a.doctorName }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="trajanjeMinuta">
-                    <th mat-header-cell *matHeaderCellDef>Trajanje</th>
-                    <td mat-cell *matCellDef="let a">{{ a.trajanjeMinuta }} min</td>
-                  </ng-container>
-                  <ng-container matColumnDef="status">
-                    <th mat-header-cell *matHeaderCellDef>Status</th>
-                    <td mat-cell *matCellDef="let a">
-                      <mat-chip [class]="statusClass(a.status)">{{ statusLabel(a.status) }}</mat-chip>
-                    </td>
-                  </ng-container>
-                  <tr mat-header-row *matHeaderRowDef="columns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: columns"></tr>
-                </table>
-              }
-            </div>
-          </mat-tab>
-        </mat-tab-group>
-      </mat-card-content>
-    </mat-card>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body">
+        <div role="tablist" class="tabs tabs-bordered mb-4">
+          <button role="tab" class="tab" [class.tab-active]="activeTab() === 0" (click)="activeTab.set(0)">Predstojeći</button>
+          <button role="tab" class="tab" [class.tab-active]="activeTab() === 1" (click)="activeTab.set(1)">Prošli</button>
+        </div>
+
+        @if (activeTab() === 0) {
+          @if (upcoming().length === 0) {
+            <p class="text-base-content/60 text-center py-8">Nemate zakazane termine.</p>
+          } @else {
+            <table class="table">
+              <thead><tr><th>Datum i vreme</th><th>Usluga</th><th>Lekar</th><th>Trajanje</th><th>Status</th></tr></thead>
+              <tbody>
+                @for (a of upcoming(); track a.appointmentId) {
+                  <tr>
+                    <td>{{ a.datumVreme | date:'dd.MM.yyyy HH:mm' }}</td>
+                    <td>{{ a.serviceName }}</td>
+                    <td>{{ a.doctorName }}</td>
+                    <td>{{ a.trajanjeMinuta }} min</td>
+                    <td><span class="badge" [class]="statusClass(a.status)">{{ statusLabel(a.status) }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+
+        @if (activeTab() === 1) {
+          @if (past().length === 0) {
+            <p class="text-base-content/60 text-center py-8">Nema prošlih termina.</p>
+          } @else {
+            <table class="table">
+              <thead><tr><th>Datum i vreme</th><th>Usluga</th><th>Lekar</th><th>Trajanje</th><th>Status</th></tr></thead>
+              <tbody>
+                @for (a of past(); track a.appointmentId) {
+                  <tr>
+                    <td>{{ a.datumVreme | date:'dd.MM.yyyy HH:mm' }}</td>
+                    <td>{{ a.serviceName }}</td>
+                    <td>{{ a.doctorName }}</td>
+                    <td>{{ a.trajanjeMinuta }} min</td>
+                    <td><span class="badge" [class]="statusClass(a.status)">{{ statusLabel(a.status) }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </div>
+    </div>
   `,
 })
 export class MyAppointmentsComponent implements OnInit {
   private api = inject(ApiService);
 
+  activeTab = signal(0);
   upcoming = signal<PortalAppointment[]>([]);
   past = signal<PortalAppointment[]>([]);
-  columns = ['datumVreme', 'serviceName', 'doctorName', 'trajanjeMinuta', 'status'];
 
   ngOnInit() {
     this.api.get<PortalAppointment[]>('portal/appointments').subscribe(data => {
@@ -135,11 +102,11 @@ export class MyAppointmentsComponent implements OnInit {
 
   statusClass(s: string): string {
     const map: Record<string, string> = {
-      zakazan: '!bg-blue-100 !text-blue-800',
-      realizovan: '!bg-green-100 !text-green-800',
-      otkazao_pacijent: '!bg-red-100 !text-red-800',
-      otkazala_klinika: '!bg-red-100 !text-red-800',
-      nije_se_pojavio: '!bg-amber-100 !text-amber-800',
+      zakazan: 'badge-info',
+      realizovan: 'badge-success',
+      otkazao_pacijent: 'badge-error',
+      otkazala_klinika: 'badge-error',
+      nije_se_pojavio: 'badge-warning',
     };
     return map[s] ?? '';
   }

@@ -1,10 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
+import { DIALOG_DATA, DialogRef } from '../../shared/services/dialog.service';
 import { ApiService } from '../../shared/services/api.service';
 
 interface Specialization {
@@ -15,64 +11,65 @@ interface Specialization {
 @Component({
   selector: 'app-doctor-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatSelectModule],
+  imports: [ReactiveFormsModule],
   template: `
-    <h2 mat-dialog-title>{{ data ? 'Izmeni lekara' : 'Novi lekar' }}</h2>
-    <mat-dialog-content class="flex flex-col gap-3 min-w-[420px]">
+    <h3 class="font-bold text-lg">{{ data ? 'Izmeni lekara' : 'Novi lekar' }}</h3>
+    <div class="mt-4 space-y-3">
       <div class="flex gap-3">
-        <mat-form-field class="flex-1">
-          <mat-label>Ime</mat-label>
-          <input matInput [formControl]="form.controls.ime" />
-        </mat-form-field>
-        <mat-form-field class="flex-1">
-          <mat-label>Prezime</mat-label>
-          <input matInput [formControl]="form.controls.prezime" />
-        </mat-form-field>
+        <fieldset class="fieldset flex-1">
+          <legend class="fieldset-legend">Ime</legend>
+          <input class="input w-full" [formControl]="form.controls.ime" />
+        </fieldset>
+        <fieldset class="fieldset flex-1">
+          <legend class="fieldset-legend">Prezime</legend>
+          <input class="input w-full" [formControl]="form.controls.prezime" />
+        </fieldset>
       </div>
-      <mat-form-field>
-        <mat-label>Email</mat-label>
-        <input matInput type="email" [formControl]="form.controls.email" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Telefon</mat-label>
-        <input matInput [formControl]="form.controls.telefon" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Specijalizacija</mat-label>
-        <mat-select [formControl]="form.controls.specializationId">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Email</legend>
+        <input class="input w-full" type="email" [formControl]="form.controls.email" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Telefon</legend>
+        <input class="input w-full" [formControl]="form.controls.telefon" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Specijalizacija</legend>
+        <select class="select w-full" [formControl]="form.controls.specializationId">
+          <option [ngValue]="0" disabled>Izaberite...</option>
           @for (s of specializations(); track s.specializationId) {
-            <mat-option [value]="s.specializationId">{{ s.naziv }}</mat-option>
+            <option [ngValue]="s.specializationId">{{ s.naziv }}</option>
           }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Titula</mat-label>
-        <input matInput [formControl]="form.controls.titula" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Broj licence</mat-label>
-        <input matInput [formControl]="form.controls.licencaBroj" />
-      </mat-form-field>
+        </select>
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Titula</legend>
+        <input class="input w-full" [formControl]="form.controls.titula" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Broj licence</legend>
+        <input class="input w-full" [formControl]="form.controls.licencaBroj" />
+      </fieldset>
       @if (!data) {
-        <mat-form-field>
-          <mat-label>Korisničko ime</mat-label>
-          <input matInput [formControl]="form.controls.userName" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Lozinka</mat-label>
-          <input matInput type="password" [formControl]="form.controls.password" />
-        </mat-form-field>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Korisničko ime</legend>
+          <input class="input w-full" [formControl]="form.controls.userName" />
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Lozinka</legend>
+          <input class="input w-full" type="password" [formControl]="form.controls.password" />
+        </fieldset>
       }
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Otkaži</button>
-      <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid">Sačuvaj</button>
-    </mat-dialog-actions>
+    </div>
+    <div class="modal-action">
+      <button class="btn" (click)="dialogRef.close(null)">Otkaži</button>
+      <button class="btn btn-primary" (click)="save()" [disabled]="form.invalid">Sačuvaj</button>
+    </div>
   `,
 })
 export class DoctorDialogComponent implements OnInit {
-  data = inject<any | null>(MAT_DIALOG_DATA);
-  private dialogRef = inject(MatDialogRef<DoctorDialogComponent>);
+  data = inject(DIALOG_DATA) as any;
+  dialogRef = inject(DialogRef);
   private fb = inject(FormBuilder);
   private api = inject(ApiService);
 

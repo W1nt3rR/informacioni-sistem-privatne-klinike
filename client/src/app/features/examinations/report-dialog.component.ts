@@ -1,35 +1,31 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
+import { DialogRef } from '../../shared/services/dialog.service';
 
 @Component({
   selector: 'app-report-dialog',
   standalone: true,
-  imports: [FormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [FormsModule],
   template: `
-    <h2 mat-dialog-title>Kreiraj medicinski izveštaj</h2>
-    <mat-dialog-content>
-      <mat-form-field class="w-full">
-        <mat-label>Sadržaj izveštaja</mat-label>
-        <textarea matInput [(ngModel)]="sadrzaj" rows="6" required></textarea>
-      </mat-form-field>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Otkaži</button>
-      <button mat-raised-button color="primary" (click)="save()"
+    <h3 class="font-bold text-lg">Kreiraj medicinski izveštaj</h3>
+    <div class="mt-4">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Sadržaj izveštaja</legend>
+        <textarea class="textarea w-full" [(ngModel)]="sadrzaj" rows="6" required></textarea>
+      </fieldset>
+    </div>
+    <div class="modal-action">
+      <button class="btn" (click)="ref.close()">Otkaži</button>
+      <button class="btn btn-primary" (click)="save()"
         [disabled]="!sadrzaj">Kreiraj</button>
-    </mat-dialog-actions>
+    </div>
   `
 })
 export class ReportDialogComponent {
+  ref = inject(DialogRef);
   sadrzaj = '';
 
-  constructor(private dialogRef: MatDialogRef<ReportDialogComponent>) {}
-
   save() {
-    this.dialogRef.close(this.sadrzaj);
+    this.ref.close(this.sadrzaj);
   }
 }

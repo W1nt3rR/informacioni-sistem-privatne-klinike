@@ -1,13 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { DialogRef, DIALOG_DATA } from '../../shared/services/dialog.service';
+import { ToastService } from '../../shared/services/toast.service';
 import { ApiService } from '../../shared/services/api.service';
 import {
   CreateAppointmentRequest, Doctor, Office, ServiceItem, AvailableSlot,
@@ -16,105 +10,102 @@ import { Patient } from '../patients/patient.model';
 import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 
 export interface AppointmentDialogData {
-  date?: Date;
+  date?: string;
 }
 
 @Component({
   selector: 'app-appointment-dialog',
   standalone: true,
-  imports: [
-    ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatSelectModule, MatDatepickerModule, MatChipsModule,
-  ],
+  imports: [ReactiveFormsModule],
   template: `
-    <h2 mat-dialog-title>Novi termin</h2>
+    <h3 class="font-bold text-lg">Novi termin</h3>
     <form [formGroup]="form" (ngSubmit)="save()">
-      <mat-dialog-content class="flex flex-col gap-3">
-        <!-- Patient search -->
-        <mat-form-field>
-          <mat-label>Pretraži pacijenta</mat-label>
-          <input matInput (input)="searchPatient($event)" [value]="selectedPatientName()" />
-        </mat-form-field>
-        @if (patients().length > 0 && !form.value.patientId) {
-          <div class="bg-white border rounded shadow-sm max-h-40 overflow-y-auto -mt-2 mb-1">
-            @for (p of patients(); track p.patientId) {
-              <button type="button" class="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm"
-                      (click)="selectPatient(p)">
-                {{ p.ime }} {{ p.prezime }} ({{ p.jmbg }})
+      <!-- Patient search -->
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Pretraži pacijenta</legend>
+        <input class="input w-full" (input)="searchPatient($event)" [value]="selectedPatientName()" />
+      </fieldset>
+      @if (patients().length > 0 && !form.value.patientId) {
+        <ul class="menu bg-base-100 rounded-box max-h-40 overflow-y-auto shadow-lg border border-base-300 mb-2">
+          @for (p of patients(); track p.patientId) {
+            <li><a (click)="selectPatient(p)">{{ p.ime }} {{ p.prezime }} ({{ p.jmbg }})</a></li>
+          }
+        </ul>
+      }
+
+      <div class="grid grid-cols-2 gap-3">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Lekar</legend>
+          <select class="select w-full" formControlName="doctorId" (change)="onDoctorOrDateChange()">
+            <option [value]="0" disabled>Izaberite</option>
+            @for (d of doctors(); track d.doctorId) {
+              <option [value]="d.doctorId">{{ d.ime }} {{ d.prezime }}</option>
+            }
+          </select>
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Usluga</legend>
+          <select class="select w-full" formControlName="serviceId" (change)="onDoctorOrDateChange()">
+            <option [value]="0" disabled>Izaberite</option>
+            @for (s of services(); track s.serviceId) {
+              <option [value]="s.serviceId">{{ s.naziv }} ({{ s.trajanjeMinuta }} min)</option>
+            }
+          </select>
+        </fieldset>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Datum</legend>
+          <input type="date" class="input w-full" formControlName="date"
+                 (change)="onDoctorOrDateChange()" />
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Ordinacija</legend>
+          <select class="select w-full" formControlName="officeId">
+            <option [value]="0" disabled>Izaberite</option>
+            @for (o of offices(); track o.officeId) {
+              <option [value]="o.officeId">{{ o.naziv }}</option>
+            }
+          </select>
+        </fieldset>
+      </div>
+
+      @if (slots().length > 0) {
+        <div class="mt-2">
+          <label class="text-sm opacity-70 mb-1 block">Slobodni termini</label>
+          <div class="flex flex-wrap gap-2">
+            @for (slot of slots(); track slot.vremeOd) {
+              <button type="button"
+                      class="btn btn-sm"
+                      [class.btn-primary]="selectedSlot() === slot.vremeOd"
+                      [class.btn-outline]="selectedSlot() !== slot.vremeOd"
+                      (click)="selectSlot(slot)">
+                {{ slot.vremeOd }} - {{ slot.vremeDo }}
               </button>
             }
           </div>
-        }
-
-        <div class="grid grid-cols-2 gap-3">
-          <mat-form-field>
-            <mat-label>Lekar</mat-label>
-            <mat-select formControlName="doctorId" (selectionChange)="onDoctorOrDateChange()">
-              @for (d of doctors(); track d.doctorId) {
-                <mat-option [value]="d.doctorId">{{ d.ime }} {{ d.prezime }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>Usluga</mat-label>
-            <mat-select formControlName="serviceId" (selectionChange)="onDoctorOrDateChange()">
-              @for (s of services(); track s.serviceId) {
-                <mat-option [value]="s.serviceId">{{ s.naziv }} ({{ s.trajanjeMinuta }} min)</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
         </div>
+      }
+      @if (slotsLoaded() && slots().length === 0 && form.value.doctorId && form.value.serviceId && form.value.date) {
+        <div class="text-warning text-sm mt-2">Nema slobodnih termina za odabrani dan.</div>
+      }
 
-        <div class="grid grid-cols-2 gap-3">
-          <mat-form-field>
-            <mat-label>Datum</mat-label>
-            <input matInput [matDatepicker]="picker" formControlName="date"
-                   (dateChange)="onDoctorOrDateChange()" />
-            <mat-datepicker-toggle matIconSuffix [for]="picker" />
-            <mat-datepicker #picker />
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>Ordinacija</mat-label>
-            <mat-select formControlName="officeId">
-              @for (o of offices(); track o.officeId) {
-                <mat-option [value]="o.officeId">{{ o.naziv }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        @if (slots().length > 0) {
-          <div>
-            <label class="text-sm text-slate-600 mb-1 block">Slobodni termini</label>
-            <div class="flex flex-wrap gap-2">
-              @for (slot of slots(); track slot.vremeOd) {
-                <mat-chip [class]="selectedSlot() === slot.vremeOd ? 'bg-blue-600 text-white' : 'bg-slate-100'"
-                          (click)="selectSlot(slot)">
-                  {{ slot.vremeOd }} - {{ slot.vremeDo }}
-                </mat-chip>
-              }
-            </div>
-          </div>
-        }
-        @if (slotsLoaded() && slots().length === 0 && form.value.doctorId && form.value.serviceId && form.value.date) {
-          <div class="text-orange-600 text-sm">Nema slobodnih termina za odabrani dan.</div>
-        }
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Otkaži</button>
-        <button mat-flat-button color="primary" type="submit"
+      <div class="modal-action">
+        <button class="btn" type="button" (click)="dialogRef.close()">Otkaži</button>
+        <button class="btn btn-primary" type="submit"
                 [disabled]="!form.valid || !selectedSlot()">
           Zakaži
         </button>
-      </mat-dialog-actions>
+      </div>
     </form>
   `,
 })
 export class AppointmentDialogComponent implements OnInit {
-  data = inject<AppointmentDialogData>(MAT_DIALOG_DATA);
-  private dialogRef = inject(MatDialogRef<AppointmentDialogComponent>);
+  data = inject<AppointmentDialogData>(DIALOG_DATA);
+  dialogRef = inject(DialogRef);
   private api = inject(ApiService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(ToastService);
   private fb = inject(FormBuilder);
 
   patients = signal<Patient[]>([]);
@@ -132,7 +123,7 @@ export class AppointmentDialogComponent implements OnInit {
     doctorId: [0, [Validators.required, Validators.min(1)]],
     serviceId: [0, [Validators.required, Validators.min(1)]],
     officeId: [0, [Validators.required, Validators.min(1)]],
-    date: [this.data?.date ?? null as Date | null, Validators.required],
+    date: [this.data?.date ?? '', Validators.required],
   });
 
   ngOnInit(): void {
@@ -173,10 +164,8 @@ export class AppointmentDialogComponent implements OnInit {
     this.slotsLoaded.set(false);
     const { doctorId, serviceId, date } = this.form.getRawValue();
     if (doctorId && serviceId && date) {
-      const d = date as Date;
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       this.api.get<AvailableSlot[]>(
-        `appointments/available-slots?doctorId=${doctorId}&serviceId=${serviceId}&date=${dateStr}`
+        `appointments/available-slots?doctorId=${doctorId}&serviceId=${serviceId}&date=${date}`
       ).subscribe(s => {
         this.slots.set(s);
         this.slotsLoaded.set(true);
@@ -189,8 +178,8 @@ export class AppointmentDialogComponent implements OnInit {
     const slot = this.selectedSlot();
     if (!slot || !val.date) return;
 
-    const d = val.date as Date;
     const [h, m] = slot.split(':').map(Number);
+    const d = new Date(val.date);
     const datumVreme = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
 
     const body: CreateAppointmentRequest = {
@@ -203,12 +192,11 @@ export class AppointmentDialogComponent implements OnInit {
 
     this.api.post('appointments', body).subscribe({
       next: () => {
-        this.snackBar.open('Termin zakazan', 'OK', { duration: 2000 });
+        this.toast.success('Termin zakazan');
         this.dialogRef.close(true);
       },
       error: (err) => {
-        const msg = err?.error || 'Greška pri zakazivanju';
-        this.snackBar.open(msg, 'OK', { duration: 4000 });
+        this.toast.error(err?.error || 'Greška pri zakazivanju');
       },
     });
   }

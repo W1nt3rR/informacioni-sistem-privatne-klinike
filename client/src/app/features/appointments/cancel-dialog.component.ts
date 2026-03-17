@@ -1,10 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
+import { DialogRef, DIALOG_DATA } from '../../shared/services/dialog.service';
 
 export interface CancelDialogData {
   appointmentId: number;
@@ -14,40 +10,37 @@ export interface CancelDialogData {
 @Component({
   selector: 'app-cancel-dialog',
   standalone: true,
-  imports: [
-    ReactiveFormsModule, MatDialogModule, MatFormFieldModule,
-    MatInputModule, MatButtonModule, MatSelectModule,
-  ],
+  imports: [ReactiveFormsModule],
   template: `
-    <h2 mat-dialog-title>Otkaži termin</h2>
+    <h3 class="font-bold text-lg">Otkaži termin</h3>
     <form [formGroup]="form" (ngSubmit)="submit()">
-      <mat-dialog-content class="flex flex-col gap-3">
-        <p class="text-sm text-slate-600">Pacijent: {{ data.pacijentIme }}</p>
-        <mat-form-field>
-          <mat-label>Razlog otkazivanja</mat-label>
-          <mat-select formControlName="status">
-            <mat-option value="otkazao_pacijent">Otkazao pacijent</mat-option>
-            <mat-option value="otkazala_klinika">Otkazala klinika</mat-option>
-            <mat-option value="nije_se_pojavio">Nije se pojavio</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Napomena</mat-label>
-          <textarea matInput formControlName="razlogOtkazivanja" rows="2"></textarea>
-        </mat-form-field>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Nazad</button>
-        <button mat-flat-button color="warn" type="submit" [disabled]="form.invalid">
-          Otkaži termin
-        </button>
-      </mat-dialog-actions>
+      <p class="text-sm opacity-70">Pacijent: {{ data.pacijentIme }}</p>
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Razlog otkazivanja</legend>
+        <select class="select w-full" formControlName="status">
+          <option value="" disabled>Izaberite razlog</option>
+          <option value="otkazao_pacijent">Otkazao pacijent</option>
+          <option value="otkazala_klinika">Otkazala klinika</option>
+          <option value="nije_se_pojavio">Nije se pojavio</option>
+        </select>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Napomena</legend>
+        <textarea class="textarea w-full" formControlName="razlogOtkazivanja" rows="2"></textarea>
+      </fieldset>
+
+      <div class="modal-action">
+        <button class="btn" type="button" (click)="dialogRef.close()">Nazad</button>
+        <button class="btn btn-error" type="submit" [disabled]="form.invalid">Otkaži termin</button>
+      </div>
     </form>
   `,
 })
 export class CancelDialogComponent {
-  data = inject<CancelDialogData>(MAT_DIALOG_DATA);
-  private dialogRef = inject(MatDialogRef<CancelDialogComponent>);
+  data = inject<CancelDialogData>(DIALOG_DATA);
+  dialogRef = inject(DialogRef);
   private fb = inject(FormBuilder);
 
   form = this.fb.nonNullable.group({

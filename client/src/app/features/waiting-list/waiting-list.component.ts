@@ -1,18 +1,10 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { MatInputModule } from '@angular/material/input';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../shared/services/api.service';
+import { DialogService } from '../../shared/services/dialog.service';
 import { WaitingListDialogComponent } from './waiting-list-dialog.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 
 interface WaitingListItem {
   waitingListItemId: number;
@@ -31,115 +23,98 @@ interface WaitingListItem {
 @Component({
   selector: 'app-waiting-list',
   standalone: true,
-  imports: [
-    DatePipe, FormsModule,
-    MatCardModule, MatTableModule, MatButtonModule, MatIconModule,
-    MatChipsModule, MatFormFieldModule, MatSelectModule, MatInputModule,
-    MatDialogModule, MatTooltipModule,
-  ],
+  imports: [DatePipe, FormsModule],
   template: `
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-semibold text-slate-800 m-0">Lista čekanja</h2>
-      <button mat-flat-button color="primary" (click)="openDialog()">
-        <mat-icon>add</mat-icon> Dodaj na listu
+      <h2 class="text-2xl font-semibold">Lista čekanja</h2>
+      <button class="btn btn-primary btn-sm" (click)="openDialog()">
+        <span class="material-icons text-sm">add</span> Dodaj na listu
       </button>
     </div>
 
-    <mat-card class="mb-4">
-      <mat-card-content>
+    <div class="card bg-base-100 shadow-sm mb-4">
+      <div class="card-body p-4">
         <div class="flex gap-4 items-end">
-          <mat-form-field class="w-48">
-            <mat-label>Status</mat-label>
-            <mat-select [(ngModel)]="statusFilter" (selectionChange)="load()">
-              <mat-option value="">Svi</mat-option>
-              <mat-option value="aktivan">Aktivan</mat-option>
-              <mat-option value="zakazan">Zakazan</mat-option>
-              <mat-option value="istekao">Istekao</mat-option>
-            </mat-select>
-          </mat-form-field>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Status</legend>
+            <select class="select w-48" [(ngModel)]="statusFilter" (ngModelChange)="load()">
+              <option value="">Svi</option>
+              <option value="aktivan">Aktivan</option>
+              <option value="zakazan">Zakazan</option>
+              <option value="istekao">Istekao</option>
+            </select>
+          </fieldset>
         </div>
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </div>
 
-    <mat-card>
-      <mat-card-content>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-0">
         @if (items().length === 0) {
-          <p class="text-slate-500 text-center py-8">Lista čekanja je prazna.</p>
+          <p class="text-base-content/60 text-center py-8">Lista čekanja je prazna.</p>
         } @else {
-          <table mat-table [dataSource]="items()" class="w-full">
-            <ng-container matColumnDef="prioritet">
-              <th mat-header-cell *matHeaderCellDef>Prioritet</th>
-              <td mat-cell *matCellDef="let w">
-                <mat-chip [class]="priorityClass(w.prioritet)">
-                  {{ priorityLabel(w.prioritet) }}
-                </mat-chip>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="patientName">
-              <th mat-header-cell *matHeaderCellDef>Pacijent</th>
-              <td mat-cell *matCellDef="let w">{{ w.patientName }}</td>
-            </ng-container>
-            <ng-container matColumnDef="serviceName">
-              <th mat-header-cell *matHeaderCellDef>Usluga</th>
-              <td mat-cell *matCellDef="let w">{{ w.serviceName }}</td>
-            </ng-container>
-            <ng-container matColumnDef="doctorName">
-              <th mat-header-cell *matHeaderCellDef>Lekar</th>
-              <td mat-cell *matCellDef="let w">{{ w.doctorName ?? 'Bilo koji' }}</td>
-            </ng-container>
-            <ng-container matColumnDef="datumUpisa">
-              <th mat-header-cell *matHeaderCellDef>Datum upisa</th>
-              <td mat-cell *matCellDef="let w">{{ w.datumUpisa | date:'dd.MM.yyyy HH:mm' }}</td>
-            </ng-container>
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
-              <td mat-cell *matCellDef="let w">
-                <mat-chip [class]="statusClass(w.status)">{{ statusLabel(w.status) }}</mat-chip>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="napomena">
-              <th mat-header-cell *matHeaderCellDef>Napomena</th>
-              <td mat-cell *matCellDef="let w">{{ w.napomena ?? '-' }}</td>
-            </ng-container>
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let w">
-                <div class="flex gap-1">
-                  @if (w.status === 'aktivan') {
-                    <button mat-icon-button color="primary"
-                            matTooltip="Označi kao zakazan"
-                            (click)="updateStatus(w.waitingListItemId, 'zakazan')">
-                      <mat-icon>event_available</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn"
-                            matTooltip="Označi kao istekao"
-                            (click)="updateStatus(w.waitingListItemId, 'istekao')">
-                      <mat-icon>event_busy</mat-icon>
-                    </button>
-                  }
-                  <button mat-icon-button color="warn"
-                          matTooltip="Ukloni sa liste"
-                          (click)="remove(w.waitingListItemId)">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="columns"></tr>
-            <tr mat-row *matRowDef="let row; columns: columns"></tr>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Prioritet</th>
+                <th>Pacijent</th>
+                <th>Usluga</th>
+                <th>Lekar</th>
+                <th>Datum upisa</th>
+                <th>Status</th>
+                <th>Napomena</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (w of items(); track w.waitingListItemId) {
+                <tr>
+                  <td><span class="badge" [class]="priorityClass(w.prioritet)">{{ priorityLabel(w.prioritet) }}</span></td>
+                  <td>{{ w.patientName }}</td>
+                  <td>{{ w.serviceName }}</td>
+                  <td>{{ w.doctorName ?? 'Bilo koji' }}</td>
+                  <td>{{ w.datumUpisa | date:'dd.MM.yyyy HH:mm' }}</td>
+                  <td><span class="badge" [class]="statusClass(w.status)">{{ statusLabel(w.status) }}</span></td>
+                  <td>{{ w.napomena ?? '-' }}</td>
+                  <td>
+                    <div class="flex gap-1">
+                      @if (w.status === 'aktivan') {
+                        <div class="tooltip" data-tip="Označi kao zakazan">
+                          <button class="btn btn-ghost btn-xs btn-square text-primary"
+                                  (click)="updateStatus(w.waitingListItemId, 'zakazan')">
+                            <span class="material-icons">event_available</span>
+                          </button>
+                        </div>
+                        <div class="tooltip" data-tip="Označi kao istekao">
+                          <button class="btn btn-ghost btn-xs btn-square text-error"
+                                  (click)="updateStatus(w.waitingListItemId, 'istekao')">
+                            <span class="material-icons">event_busy</span>
+                          </button>
+                        </div>
+                      }
+                      <div class="tooltip" data-tip="Ukloni sa liste">
+                        <button class="btn btn-ghost btn-xs btn-square text-error"
+                                (click)="remove(w.waitingListItemId)">
+                          <span class="material-icons">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
           </table>
         }
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </div>
   `,
 })
 export class WaitingListComponent implements OnInit {
   private api = inject(ApiService);
-  private dialog = inject(MatDialog);
+  private dialogService = inject(DialogService);
 
   items = signal<WaitingListItem[]>([]);
   statusFilter = 'aktivan';
-  columns = ['prioritet', 'patientName', 'serviceName', 'doctorName', 'datumUpisa', 'status', 'napomena', 'actions'];
 
   ngOnInit() {
     this.load();
@@ -152,8 +127,8 @@ export class WaitingListComponent implements OnInit {
   }
 
   openDialog(): void {
-    this.dialog.open(WaitingListDialogComponent, { width: '500px' })
-      .afterClosed().subscribe(ok => { if (ok) this.load(); });
+    this.dialogService.open(WaitingListDialogComponent, null)
+      .afterClosed.subscribe(ok => { if (ok) this.load(); });
   }
 
   updateStatus(id: number, status: string): void {
@@ -161,8 +136,14 @@ export class WaitingListComponent implements OnInit {
   }
 
   remove(id: number): void {
-    if (!confirm('Da li ste sigurni da želite da uklonite stavku sa liste čekanja?')) return;
-    this.api.delete(`waiting-list/${id}`).subscribe(() => this.load());
+    const ref = this.dialogService.open(ConfirmDialogComponent, {
+      title: 'Uklanjanje',
+      message: 'Da li ste sigurni da želite da uklonite stavku sa liste čekanja?'
+    });
+    ref.afterClosed.subscribe(confirmed => {
+      if (!confirmed) return;
+      this.api.delete(`waiting-list/${id}`).subscribe(() => this.load());
+    });
   }
 
   priorityLabel(p: number): string {
@@ -170,9 +151,9 @@ export class WaitingListComponent implements OnInit {
   }
 
   priorityClass(p: number): string {
-    if (p === 1) return '!bg-red-100 !text-red-800';
-    if (p === 2) return '!bg-amber-100 !text-amber-800';
-    return '!bg-green-100 !text-green-800';
+    if (p === 1) return 'badge-error';
+    if (p === 2) return 'badge-warning';
+    return 'badge-success';
   }
 
   statusLabel(s: string): string {
@@ -182,9 +163,9 @@ export class WaitingListComponent implements OnInit {
 
   statusClass(s: string): string {
     const map: Record<string, string> = {
-      aktivan: '!bg-blue-100 !text-blue-800',
-      zakazan: '!bg-green-100 !text-green-800',
-      istekao: '!bg-slate-100 !text-slate-600',
+      aktivan: 'badge-info',
+      zakazan: 'badge-success',
+      istekao: 'badge-ghost',
     };
     return map[s] ?? '';
   }

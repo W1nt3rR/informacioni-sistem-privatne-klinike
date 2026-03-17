@@ -1,14 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApiService } from '../../shared/services/api.service';
+import { ToastService } from '../../shared/services/toast.service';
 
 interface NotificationItem {
   notificationId: number;
@@ -25,106 +19,102 @@ interface NotificationItem {
 @Component({
   selector: 'app-notification-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatTableModule, MatButtonModule, MatIconModule,
-    MatFormFieldModule, MatSelectModule, MatChipsModule, MatSnackBarModule],
+  imports: [DatePipe, FormsModule],
   template: `
-    <div class="p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Obaveštenja</h1>
-        <button mat-raised-button color="accent" (click)="generateReminders()">
-          <mat-icon>notification_add</mat-icon> Generiši podsetnike
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-semibold">Obaveštenja</h2>
+        <button class="btn btn-secondary btn-sm" (click)="generateReminders()">
+          <span class="material-icons text-sm">notification_add</span> Generiši podsetnike
         </button>
       </div>
 
       <!-- Filters -->
       <div class="flex gap-4 mb-4">
-        <mat-form-field class="w-48">
-          <mat-label>Tip</mat-label>
-          <mat-select [(ngModel)]="tipFilter" (selectionChange)="load()">
-            <mat-option value="">Svi</mat-option>
-            <mat-option value="podsetnik">Podsetnik</mat-option>
-            <mat-option value="raspored">Raspored</mat-option>
-            <mat-option value="kontrola">Kontrola</mat-option>
-            <mat-option value="poruka">Poruka</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field class="w-48">
-          <mat-label>Status</mat-label>
-          <mat-select [(ngModel)]="statusFilter" (selectionChange)="load()">
-            <mat-option value="">Svi</mat-option>
-            <mat-option value="ceka">Čeka</mat-option>
-            <mat-option value="poslato">Poslato</mat-option>
-            <mat-option value="isporuceno">Isporučeno</mat-option>
-            <mat-option value="greska">Greška</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field class="w-48">
-          <mat-label>Primalac</mat-label>
-          <mat-select [(ngModel)]="primalacFilter" (selectionChange)="load()">
-            <mat-option value="">Svi</mat-option>
-            <mat-option value="pacijent">Pacijent</mat-option>
-            <mat-option value="lekar">Lekar</mat-option>
-          </mat-select>
-        </mat-form-field>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Tip</legend>
+          <select class="select w-48" [(ngModel)]="tipFilter" (ngModelChange)="load()">
+            <option value="">Svi</option>
+            <option value="podsetnik">Podsetnik</option>
+            <option value="raspored">Raspored</option>
+            <option value="kontrola">Kontrola</option>
+            <option value="poruka">Poruka</option>
+          </select>
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Status</legend>
+          <select class="select w-48" [(ngModel)]="statusFilter" (ngModelChange)="load()">
+            <option value="">Svi</option>
+            <option value="ceka">Čeka</option>
+            <option value="poslato">Poslato</option>
+            <option value="isporuceno">Isporučeno</option>
+            <option value="greska">Greška</option>
+          </select>
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Primalac</legend>
+          <select class="select w-48" [(ngModel)]="primalacFilter" (ngModelChange)="load()">
+            <option value="">Svi</option>
+            <option value="pacijent">Pacijent</option>
+            <option value="lekar">Lekar</option>
+          </select>
+        </fieldset>
       </div>
 
-      <table mat-table [dataSource]="notifications()" class="w-full">
-        <ng-container matColumnDef="tip">
-          <th mat-header-cell *matHeaderCellDef>Tip</th>
-          <td mat-cell *matCellDef="let n">{{ formatTip(n.tip) }}</td>
-        </ng-container>
-        <ng-container matColumnDef="primalac">
-          <th mat-header-cell *matHeaderCellDef>Primalac</th>
-          <td mat-cell *matCellDef="let n">
-            <span class="text-xs text-gray-400">{{ n.primalacTip === 'pacijent' ? 'Pacijent' : 'Lekar' }}</span><br>
-            {{ n.primalacIme }}
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="sadrzaj">
-          <th mat-header-cell *matHeaderCellDef>Sadržaj</th>
-          <td mat-cell *matCellDef="let n" class="max-w-sm truncate">{{ n.sadrzaj }}</td>
-        </ng-container>
-        <ng-container matColumnDef="datum">
-          <th mat-header-cell *matHeaderCellDef>Datum</th>
-          <td mat-cell *matCellDef="let n">{{ n.datumSlanja | date:'dd.MM.yyyy. HH:mm' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let n">
-            <span class="px-2 py-1 rounded text-xs font-medium"
-              [class.bg-yellow-100]="n.status === 'ceka'"
-              [class.text-yellow-800]="n.status === 'ceka'"
-              [class.bg-green-100]="n.status === 'poslato' || n.status === 'isporuceno'"
-              [class.text-green-800]="n.status === 'poslato' || n.status === 'isporuceno'"
-              [class.bg-red-100]="n.status === 'greska'"
-              [class.text-red-800]="n.status === 'greska'">
-              {{ formatStatus(n.status) }}
-            </span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let n">
-            @if (n.status === 'ceka') {
-              <button mat-icon-button color="primary" (click)="send(n)"
-                matTooltip="Pošalji">
-                <mat-icon>send</mat-icon>
-              </button>
-            }
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-    </div>
+      @if (loading()) {
+        <div class="flex justify-center py-12">
+          <span class="loading loading-spinner loading-md"></span>
+        </div>
+      } @else {
+      <div class="card bg-base-100 shadow-sm overflow-x-auto">
+        <table class="table">
+        <thead>
+          <tr>
+            <th>Tip</th>
+            <th>Primalac</th>
+            <th>Sadržaj</th>
+            <th>Datum</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (n of notifications(); track n.notificationId) {
+            <tr>
+              <td>{{ formatTip(n.tip) }}</td>
+              <td>
+                <span class="text-xs text-base-content/60">{{ n.primalacTip === 'pacijent' ? 'Pacijent' : 'Lekar' }}</span><br>
+                {{ n.primalacIme }}
+              </td>
+              <td class="max-w-sm truncate">{{ n.sadrzaj }}</td>
+              <td>{{ n.datumSlanja | date:'dd.MM.yyyy. HH:mm' }}</td>
+              <td>
+                <span class="badge" [class]="statusBadge(n.status)">
+                  {{ formatStatus(n.status) }}
+                </span>
+              </td>
+              <td>
+                @if (n.status === 'ceka') {
+                  <div class="tooltip" data-tip="Pošalji">
+                    <button class="btn btn-ghost btn-xs btn-square text-primary" (click)="send(n)">
+                      <span class="material-icons text-sm">send</span>
+                    </button>
+                  </div>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+        </table>
+      </div>
+      }
   `
 })
 export class NotificationListComponent implements OnInit {
   private api = inject(ApiService);
-  private snack = inject(MatSnackBar);
+  private toast = inject(ToastService);
 
   notifications = signal<NotificationItem[]>([]);
-  displayedColumns = ['tip', 'primalac', 'sadrzaj', 'datum', 'status', 'actions'];
+  loading = signal(true);
 
   tipFilter = '';
   statusFilter = '';
@@ -133,24 +123,28 @@ export class NotificationListComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   load() {
+    this.loading.set(true);
     const params = new URLSearchParams();
     if (this.tipFilter) params.set('tip', this.tipFilter);
     if (this.statusFilter) params.set('status', this.statusFilter);
     if (this.primalacFilter) params.set('primalacTip', this.primalacFilter);
     const qs = params.toString();
-    this.api.get<NotificationItem[]>(`notifications${qs ? '?' + qs : ''}`).subscribe(r => this.notifications.set(r));
+    this.api.get<NotificationItem[]>(`notifications${qs ? '?' + qs : ''}`).subscribe(r => {
+      this.notifications.set(r);
+      this.loading.set(false);
+    });
   }
 
   send(n: NotificationItem) {
     this.api.patch(`notifications/${n.notificationId}/send`, {}).subscribe(() => {
-      this.snack.open('Obaveštenje poslato', 'OK', { duration: 2000 });
+      this.toast.success('Obaveštenje poslato');
       this.load();
     });
   }
 
   generateReminders() {
     this.api.post<{ generated: number }>('notifications/generate-reminders', {}).subscribe(r => {
-      this.snack.open(`Generisano ${r.generated} obaveštenja`, 'OK', { duration: 3000 });
+      this.toast.success(`Generisano ${r.generated} obaveštenja`);
       this.load();
     });
   }
@@ -172,6 +166,15 @@ export class NotificationListComponent implements OnInit {
       case 'isporuceno': return 'Isporučeno';
       case 'greska': return 'Greška';
       default: return s;
+    }
+  }
+
+  statusBadge(s: string): string {
+    switch (s) {
+      case 'ceka': return 'badge-warning';
+      case 'poslato': case 'isporuceno': return 'badge-success';
+      case 'greska': return 'badge-error';
+      default: return '';
     }
   }
 }

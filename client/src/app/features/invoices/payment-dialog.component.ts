@@ -1,49 +1,42 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
+import { DialogRef, DIALOG_DATA } from '../../shared/services/dialog.service';
 import { CreatePaymentRequest } from './invoice.model';
 
 @Component({
   selector: 'app-payment-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatFormFieldModule,
-    MatInputModule, MatSelectModule, MatButtonModule],
+  imports: [CommonModule, FormsModule],
   template: `
-    <h2 mat-dialog-title>Evidentiraj uplatu</h2>
-    <mat-dialog-content>
-      <p class="mb-4">Preostalo za naplatu: <strong>{{ data.remaining | number:'1.2-2' }} RSD</strong></p>
-      <mat-form-field class="w-full">
-        <mat-label>Iznos</mat-label>
-        <input matInput type="number" [(ngModel)]="payment.iznos" [max]="data.remaining" min="0.01">
-      </mat-form-field>
-      <mat-form-field class="w-full">
-        <mat-label>Način plaćanja</mat-label>
-        <mat-select [(ngModel)]="payment.nacinPlacanja">
-          <mat-option value="gotovina">Gotovina</mat-option>
-          <mat-option value="kartica">Kartica</mat-option>
-          <mat-option value="virman">Virman</mat-option>
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field class="w-full">
-        <mat-label>Napomena</mat-label>
-        <textarea matInput [(ngModel)]="payment.napomena" rows="2"></textarea>
-      </mat-form-field>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Otkaži</button>
-      <button mat-raised-button color="primary" (click)="save()"
+    <h3 class="font-bold text-lg">Evidentiraj uplatu</h3>
+    <p class="mb-4">Preostalo za naplatu: <strong>{{ data.remaining | number:'1.2-2' }} RSD</strong></p>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Iznos</legend>
+      <input class="input w-full" type="number" [(ngModel)]="payment.iznos" [max]="data.remaining" min="0.01">
+    </fieldset>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Način plaćanja</legend>
+      <select class="select w-full" [(ngModel)]="payment.nacinPlacanja">
+        <option value="gotovina">Gotovina</option>
+        <option value="kartica">Kartica</option>
+        <option value="virman">Virman</option>
+      </select>
+    </fieldset>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Napomena</legend>
+      <textarea class="textarea w-full" [(ngModel)]="payment.napomena" rows="2"></textarea>
+    </fieldset>
+    <div class="modal-action">
+      <button class="btn" (click)="ref.close()">Otkaži</button>
+      <button class="btn btn-primary" (click)="save()"
         [disabled]="!payment.iznos || !payment.nacinPlacanja">Sačuvaj</button>
-    </mat-dialog-actions>
+    </div>
   `
 })
 export class PaymentDialogComponent {
-  data = inject(MAT_DIALOG_DATA) as { remaining: number };
-  private dialogRef = inject(MatDialogRef<PaymentDialogComponent>);
+  ref = inject(DialogRef);
+  data = inject(DIALOG_DATA) as { remaining: number };
 
   payment: CreatePaymentRequest = {
     iznos: this.data.remaining,
@@ -52,6 +45,6 @@ export class PaymentDialogComponent {
   };
 
   save() {
-    this.dialogRef.close(this.payment);
+    this.ref.close(this.payment);
   }
 }

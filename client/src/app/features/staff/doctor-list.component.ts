@@ -1,19 +1,10 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../shared/services/api.service';
+import { DialogService } from '../../shared/services/dialog.service';
+import { ToastService } from '../../shared/services/toast.service';
 import { Doctor } from './doctor.model';
 import { DoctorDialogComponent } from './doctor-dialog.component';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 
 interface Specialization {
   specializationId: number;
@@ -23,82 +14,74 @@ interface Specialization {
 @Component({
   selector: 'app-doctor-list',
   standalone: true,
-  imports: [
-    MatTableModule, MatButtonModule, MatIconModule, MatTooltipModule,
-    MatProgressSpinnerModule, MatChipsModule, MatSelectModule, MatFormFieldModule, RouterLink,
-  ],
+  imports: [RouterLink],
   template: `
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold text-slate-800 m-0">Lekari</h2>
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-semibold">Lekari</h2>
       <div class="flex gap-3 items-center">
-        <mat-form-field class="w-52" subscriptSizing="dynamic">
-          <mat-label>Specijalizacija</mat-label>
-          <mat-select (selectionChange)="filterBySpec($event.value)" [value]="null">
-            <mat-option [value]="null">Sve</mat-option>
-            @for (s of specializations(); track s.specializationId) {
-              <mat-option [value]="s.specializationId">{{ s.naziv }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <button mat-flat-button color="primary" (click)="openDialog()">
-          <mat-icon>add</mat-icon> Dodaj
+        <select class="select w-52" (change)="filterBySpec($event)">
+          <option value="">Sve specijalizacije</option>
+          @for (s of specializations(); track s.specializationId) {
+            <option [value]="s.specializationId">{{ s.naziv }}</option>
+          }
+        </select>
+        <button class="btn btn-primary btn-sm" (click)="openDialog()">
+          <span class="material-icons text-sm">add</span> Dodaj
         </button>
       </div>
     </div>
 
     @if (loading()) {
       <div class="flex justify-center py-12">
-        <mat-spinner diameter="40" />
+        <span class="loading loading-spinner loading-md"></span>
       </div>
     } @else {
-      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <table mat-table [dataSource]="items()" class="w-full">
-          <ng-container matColumnDef="ime">
-            <th mat-header-cell *matHeaderCellDef>Ime i prezime</th>
-            <td mat-cell *matCellDef="let row">
-              <a [routerLink]="[row.doctorId]" class="text-blue-600 hover:underline">
-                {{ row.titula ? row.titula + ' ' : '' }}{{ row.ime }} {{ row.prezime }}
-              </a>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="specijalizacija">
-            <th mat-header-cell *matHeaderCellDef>Specijalizacija</th>
-            <td mat-cell *matCellDef="let row">{{ row.specijalizacijaNaziv }}</td>
-          </ng-container>
-          <ng-container matColumnDef="licencaBroj">
-            <th mat-header-cell *matHeaderCellDef>Broj licence</th>
-            <td mat-cell *matCellDef="let row">{{ row.licencaBroj }}</td>
-          </ng-container>
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef>Email</th>
-            <td mat-cell *matCellDef="let row">{{ row.email }}</td>
-          </ng-container>
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let row">
-              <mat-chip [highlighted]="row.aktivan" [class]="row.aktivan ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                {{ row.aktivan ? 'Aktivan' : 'Neaktivan' }}
-              </mat-chip>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef class="w-32">Akcije</th>
-            <td mat-cell *matCellDef="let row">
-              <button mat-icon-button matTooltip="Izmeni" (click)="openDialog(row)">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button mat-icon-button [matTooltip]="row.aktivan ? 'Deaktiviraj' : 'Aktiviraj'" (click)="toggleStatus(row)">
-                <mat-icon>{{ row.aktivan ? 'block' : 'check_circle' }}</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      <div class="card bg-base-100 shadow-sm overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Ime i prezime</th>
+              <th>Specijalizacija</th>
+              <th>Broj licence</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th class="w-32">Akcije</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of items(); track row.doctorId) {
+              <tr>
+                <td>
+                  <a [routerLink]="[row.doctorId]" class="link link-primary">
+                    {{ row.titula ? row.titula + ' ' : '' }}{{ row.ime }} {{ row.prezime }}
+                  </a>
+                </td>
+                <td>{{ row.specijalizacijaNaziv }}</td>
+                <td>{{ row.licencaBroj }}</td>
+                <td>{{ row.email }}</td>
+                <td>
+                  <span class="badge" [class]="row.aktivan ? 'badge-success' : 'badge-error'">
+                    {{ row.aktivan ? 'Aktivan' : 'Neaktivan' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="tooltip" data-tip="Izmeni">
+                    <button class="btn btn-ghost btn-xs btn-square" (click)="openDialog(row)">
+                      <span class="material-icons text-sm">edit</span>
+                    </button>
+                  </div>
+                  <div class="tooltip" [attr.data-tip]="row.aktivan ? 'Deaktiviraj' : 'Aktiviraj'">
+                    <button class="btn btn-ghost btn-xs btn-square" (click)="toggleStatus(row)">
+                      <span class="material-icons text-sm">{{ row.aktivan ? 'block' : 'check_circle' }}</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
         </table>
-
         @if (items().length === 0) {
-          <div class="text-center text-slate-400 py-8">Nema lekara.</div>
+          <div class="text-center text-base-content/60 py-8">Nema lekara.</div>
         }
       </div>
     }
@@ -106,13 +89,12 @@ interface Specialization {
 })
 export class DoctorListComponent implements OnInit {
   private api = inject(ApiService);
-  private dialog = inject(MatDialog);
-  private snackBar = inject(MatSnackBar);
+  private dialogService = inject(DialogService);
+  private toast = inject(ToastService);
 
   items = signal<Doctor[]>([]);
   specializations = signal<Specialization[]>([]);
   loading = signal(true);
-  columns = ['ime', 'specijalizacija', 'licencaBroj', 'email', 'status', 'actions'];
   private specFilter: number | null = null;
 
   ngOnInit(): void {
@@ -130,14 +112,15 @@ export class DoctorListComponent implements OnInit {
     });
   }
 
-  filterBySpec(id: number | null): void {
-    this.specFilter = id;
+  filterBySpec(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.specFilter = val ? +val : null;
     this.load();
   }
 
   openDialog(item?: Doctor): void {
-    const ref = this.dialog.open(DoctorDialogComponent, { data: item ?? null });
-    ref.afterClosed().subscribe(result => {
+    const ref = this.dialogService.open(DoctorDialogComponent, item ?? null);
+    ref.afterClosed.subscribe(result => {
       if (!result) return;
       const op = item
         ? this.api.put(`doctors/${item.doctorId}`, {
@@ -147,16 +130,16 @@ export class DoctorListComponent implements OnInit {
           })
         : this.api.post('doctors', result);
       op.subscribe({
-        next: () => { this.snackBar.open(item ? 'Izmenjeno' : 'Dodato', 'OK', { duration: 2000 }); this.load(); },
-        error: () => this.snackBar.open('Greška pri čuvanju', 'OK', { duration: 3000 }),
+        next: () => { this.toast.success(item ? 'Izmenjeno' : 'Dodato'); this.load(); },
+        error: () => this.toast.error('Greška pri čuvanju'),
       });
     });
   }
 
   toggleStatus(item: Doctor): void {
     this.api.patch(`doctors/${item.doctorId}/status`).subscribe({
-      next: () => { this.snackBar.open('Status promenjen', 'OK', { duration: 2000 }); this.load(); },
-      error: () => this.snackBar.open('Greška', 'OK', { duration: 3000 }),
+      next: () => { this.toast.success('Status promenjen'); this.load(); },
+      error: () => this.toast.error('Greška'),
     });
   }
 }

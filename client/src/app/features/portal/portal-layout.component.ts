@@ -1,55 +1,52 @@
 import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-portal-layout',
   standalone: true,
-  imports: [
-    RouterOutlet, RouterLink, RouterLinkActive,
-    MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule,
-  ],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="min-h-screen bg-slate-50">
-      <mat-toolbar color="primary" class="!bg-blue-700">
-        <mat-icon class="mr-2">local_hospital</mat-icon>
-        <span class="font-semibold">Portal pacijenta</span>
+    <div class="min-h-screen bg-base-200">
+      <div class="navbar bg-primary text-primary-content">
+        <div class="flex-none">
+          <span class="material-icons mr-2">local_hospital</span>
+          <span class="font-semibold text-lg">Portal pacijenta</span>
+        </div>
 
         <nav class="ml-8 flex gap-1">
-          <a mat-button routerLink="/portal/appointments" routerLinkActive="!bg-blue-800"
-             class="!text-white">
-            <mat-icon>calendar_today</mat-icon> Termini
+          <a routerLink="/portal/appointments" routerLinkActive="bg-primary-focus"
+             class="btn btn-ghost btn-sm">
+            <span class="material-icons text-sm">calendar_today</span> Termini
           </a>
-          <a mat-button routerLink="/portal/reports" routerLinkActive="!bg-blue-800"
-             class="!text-white">
-            <mat-icon>description</mat-icon> Nalazi
+          <a routerLink="/portal/reports" routerLinkActive="bg-primary-focus"
+             class="btn btn-ghost btn-sm">
+            <span class="material-icons text-sm">description</span> Nalazi
           </a>
-          <a mat-button routerLink="/portal/messages" routerLinkActive="!bg-blue-800"
-             class="!text-white">
-            <mat-icon>mail</mat-icon> Poruke
+          <a routerLink="/portal/messages" routerLinkActive="bg-primary-focus"
+             class="btn btn-ghost btn-sm">
+            <span class="material-icons text-sm">mail</span> Poruke
           </a>
         </nav>
 
-        <span class="flex-1"></span>
+        <div class="flex-1"></div>
 
-        <button mat-icon-button [matMenuTriggerFor]="menu" class="!text-white">
-          <mat-icon>account_circle</mat-icon>
-        </button>
-        <mat-menu #menu="matMenu">
-          <button mat-menu-item disabled>
-            <mat-icon>person</mat-icon>
-            <span>{{ user()?.ime }} {{ user()?.prezime }}</span>
-          </button>
-          <button mat-menu-item (click)="logout()">
-            <mat-icon>logout</mat-icon>
-            <span>Odjavi se</span>
-          </button>
-        </mat-menu>
-      </mat-toolbar>
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+            <span class="material-icons">account_circle</span>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu bg-base-100 text-base-content rounded-box z-10 w-56 p-2 shadow">
+            <li class="disabled"><a class="text-base-content/60">
+              <span class="material-icons text-sm">person</span>
+              {{ user()?.ime }} {{ user()?.prezime }}
+            </a></li>
+            <li><a (click)="logout()">
+              <span class="material-icons text-sm">logout</span>
+              Odjavi se
+            </a></li>
+          </ul>
+        </div>
+      </div>
 
       <main class="max-w-5xl mx-auto p-6">
         <router-outlet />

@@ -1,10 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
+import { DialogRef, DIALOG_DATA } from '../../shared/services/dialog.service';
 import { Allergy } from './patient.model';
 
 export interface AllergyDialogData {
@@ -15,44 +11,40 @@ export interface AllergyDialogData {
 @Component({
   selector: 'app-allergy-dialog',
   standalone: true,
-  imports: [
-    ReactiveFormsModule, MatDialogModule, MatFormFieldModule,
-    MatInputModule, MatButtonModule, MatSelectModule,
-  ],
+  imports: [ReactiveFormsModule],
   template: `
-    <h2 mat-dialog-title>{{ data.allergy ? 'Izmeni alergiju' : 'Nova alergija' }}</h2>
+    <h3 class="font-bold text-lg">{{ data.allergy ? 'Izmeni alergiju' : 'Nova alergija' }}</h3>
     <form [formGroup]="form" (ngSubmit)="save()">
-      <mat-dialog-content class="flex flex-col gap-3">
-        <mat-form-field>
-          <mat-label>Naziv alergena</mat-label>
-          <input matInput formControlName="nazivAlergena" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Ozbiljnost</mat-label>
-          <mat-select formControlName="ozbiljnost">
-            <mat-option value="Blaga">Blaga</mat-option>
-            <mat-option value="Umerena">Umerena</mat-option>
-            <mat-option value="Ozbiljna">Ozbiljna</mat-option>
-            <mat-option value="Životno ugrožavajuća">Životno ugrožavajuća</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Opis</mat-label>
-          <textarea matInput formControlName="opis" rows="2"></textarea>
-        </mat-form-field>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Otkaži</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Naziv alergena</legend>
+        <input class="input w-full" formControlName="nazivAlergena" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Ozbiljnost</legend>
+        <select class="select w-full" formControlName="ozbiljnost">
+          <option value="" disabled>Izaberite</option>
+          <option value="Blaga">Blaga</option>
+          <option value="Umerena">Umerena</option>
+          <option value="Ozbiljna">Ozbiljna</option>
+          <option value="Životno ugrožavajuća">Životno ugrožavajuća</option>
+        </select>
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Opis</legend>
+        <textarea class="textarea w-full" formControlName="opis" rows="2"></textarea>
+      </fieldset>
+      <div class="modal-action">
+        <button class="btn" type="button" (click)="dialogRef.close()">Otkaži</button>
+        <button class="btn btn-primary" type="submit" [disabled]="form.invalid">
           {{ data.allergy ? 'Sačuvaj' : 'Dodaj' }}
         </button>
-      </mat-dialog-actions>
+      </div>
     </form>
   `,
 })
 export class AllergyDialogComponent {
-  data = inject<AllergyDialogData>(MAT_DIALOG_DATA);
-  dialogRef = inject(MatDialogRef<AllergyDialogComponent>);
+  data = inject<AllergyDialogData>(DIALOG_DATA);
+  dialogRef = inject(DialogRef);
   private fb = inject(FormBuilder);
 
   form = this.fb.nonNullable.group({

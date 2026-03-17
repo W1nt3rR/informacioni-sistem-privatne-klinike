@@ -1,13 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
-import { MatDividerModule } from '@angular/material/divider';
 import { ApiService } from '../../shared/services/api.service';
 
 interface PortalMessage {
@@ -22,72 +15,59 @@ interface PortalMessage {
 @Component({
   selector: 'app-portal-messages',
   standalone: true,
-  imports: [
-    DatePipe, FormsModule,
-    MatCardModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatIconModule, MatListModule, MatDividerModule,
-  ],
+  imports: [DatePipe, FormsModule],
   template: `
-    <h2 class="text-2xl font-semibold text-slate-800 mb-6">Poruke</h2>
+    <h2 class="text-2xl font-semibold mb-6">Poruke</h2>
 
     <!-- New message -->
-    <mat-card class="mb-4">
-      <mat-card-header>
-        <mat-card-title class="!text-base">Nova poruka</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="mt-3">
-        <form (ngSubmit)="sendMessage()" class="flex gap-3 items-end">
-          <mat-form-field class="flex-1">
-            <mat-label>Poruka</mat-label>
-            <textarea matInput [(ngModel)]="newMessage" name="msg" rows="2"
+    <div class="card bg-base-100 shadow-sm mb-4">
+      <div class="card-body">
+        <h3 class="card-title text-base">Nova poruka</h3>
+        <form (ngSubmit)="sendMessage()" class="flex gap-3 items-end mt-2">
+          <fieldset class="fieldset flex-1">
+            <textarea class="textarea w-full" [(ngModel)]="newMessage" name="msg" rows="2"
                       placeholder="Napišite poruku osoblju klinike..." required></textarea>
-          </mat-form-field>
-          <button mat-flat-button color="primary" type="submit"
+          </fieldset>
+          <button class="btn btn-primary" type="submit"
                   [disabled]="!newMessage.trim() || sending()">
-            <mat-icon>send</mat-icon> Pošalji
+            <span class="material-icons text-sm">send</span> Pošalji
           </button>
         </form>
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </div>
 
     <!-- Message list -->
-    <mat-card>
-      <mat-card-content>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body">
         @if (messages().length === 0) {
-          <p class="text-slate-500 text-center py-8">Nemate poruke.</p>
+          <p class="text-base-content/60 text-center py-8">Nemate poruke.</p>
         } @else {
-          <mat-list>
+          <div class="flex flex-col divide-y divide-base-300">
             @for (m of messages(); track m.messageId) {
-              <mat-list-item class="!h-auto !py-3">
-                <div class="flex items-start gap-3 w-full">
-                  <mat-icon [class]="m.posiljalacTip === 'pacijent'
-                    ? 'text-blue-500' : 'text-green-500'">
-                    {{ m.posiljalacTip === 'pacijent' ? 'person' : 'support_agent' }}
-                  </mat-icon>
-                  <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="text-xs font-medium"
-                            [class]="m.posiljalacTip === 'pacijent'
-                              ? 'text-blue-600' : 'text-green-600'">
-                        {{ m.posiljalacTip === 'pacijent' ? 'Vi' : 'Klinika' }}
-                      </span>
-                      <span class="text-xs text-slate-400">
-                        {{ m.datumSlanja | date:'dd.MM.yyyy HH:mm' }}
-                      </span>
-                      @if (!m.procitana && m.posiljalacTip !== 'pacijent') {
-                        <span class="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded">Novo</span>
-                      }
-                    </div>
-                    <p class="text-sm text-slate-700 m-0 whitespace-pre-wrap">{{ m.sadrzaj }}</p>
+              <div class="flex items-start gap-3 py-3">
+                <span class="material-icons" [class]="m.posiljalacTip === 'pacijent' ? 'text-info' : 'text-success'">
+                  {{ m.posiljalacTip === 'pacijent' ? 'person' : 'support_agent' }}
+                </span>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs font-medium" [class]="m.posiljalacTip === 'pacijent' ? 'text-info' : 'text-success'">
+                      {{ m.posiljalacTip === 'pacijent' ? 'Vi' : 'Klinika' }}
+                    </span>
+                    <span class="text-xs text-base-content/60">
+                      {{ m.datumSlanja | date:'dd.MM.yyyy HH:mm' }}
+                    </span>
+                    @if (!m.procitana && m.posiljalacTip !== 'pacijent') {
+                      <span class="badge badge-info badge-sm">Novo</span>
+                    }
                   </div>
+                  <p class="text-sm m-0 whitespace-pre-wrap">{{ m.sadrzaj }}</p>
                 </div>
-              </mat-list-item>
-              <mat-divider />
+              </div>
             }
-          </mat-list>
+          </div>
         }
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </div>
   `,
 })
 export class PortalMessagesComponent implements OnInit {

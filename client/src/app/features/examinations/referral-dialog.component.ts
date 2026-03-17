@@ -1,45 +1,41 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
+import { DialogRef } from '../../shared/services/dialog.service';
 
 @Component({
   selector: 'app-referral-dialog',
   standalone: true,
-  imports: [FormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
+  imports: [FormsModule],
   template: `
-    <h2 mat-dialog-title>Dodaj uput</h2>
-    <mat-dialog-content class="flex flex-col gap-3">
-      <mat-form-field>
-        <mat-label>Tip uputa</mat-label>
-        <mat-select [(value)]="tip" required>
-          <mat-option value="laboratorija">Laboratorija</mat-option>
-          <mat-option value="specijalisticki">Specijalistički</mat-option>
-          <mat-option value="dijagnostika">Dijagnostika</mat-option>
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Opis</mat-label>
-        <textarea matInput [(ngModel)]="opis" rows="3" required></textarea>
-      </mat-form-field>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Otkaži</button>
-      <button mat-raised-button color="primary" (click)="save()"
+    <h3 class="font-bold text-lg">Dodaj uput</h3>
+    <div class="mt-4 space-y-3">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Tip uputa</legend>
+        <select class="select w-full" [(ngModel)]="tip" required>
+          <option value="" disabled>Odaberi tip</option>
+          <option value="laboratorija">Laboratorija</option>
+          <option value="specijalisticki">Specijalistički</option>
+          <option value="dijagnostika">Dijagnostika</option>
+        </select>
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Opis</legend>
+        <textarea class="textarea w-full" [(ngModel)]="opis" rows="3" required></textarea>
+      </fieldset>
+    </div>
+    <div class="modal-action">
+      <button class="btn" (click)="ref.close()">Otkaži</button>
+      <button class="btn btn-primary" (click)="save()"
         [disabled]="!tip || !opis">Dodaj</button>
-    </mat-dialog-actions>
+    </div>
   `
 })
 export class ReferralDialogComponent {
+  ref = inject(DialogRef);
   tip = '';
   opis = '';
 
-  constructor(private dialogRef: MatDialogRef<ReferralDialogComponent>) {}
-
   save() {
-    this.dialogRef.close({ tip: this.tip, opis: this.opis });
+    this.ref.close({ tip: this.tip, opis: this.opis });
   }
 }
