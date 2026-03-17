@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
-import { PlaceholderComponent } from '../../shared/components/placeholder.component';
+import { AppointmentListComponent } from './appointment-list.component';
 
 export const APPOINTMENT_ROUTES: Routes = [
-  { path: '', component: PlaceholderComponent, data: { title: 'Termini' } },
+  { path: '', component: AppointmentListComponent, data: { title: 'Termini' } },
 ];
