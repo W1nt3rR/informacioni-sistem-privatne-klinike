@@ -8,6 +8,15 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login.component').then(m => m.LoginComponent),
   },
   {
+    path: 'register',
+    loadComponent: () => import('./features/portal/portal-register.component').then(m => m.PortalRegisterComponent),
+  },
+  {
+    path: 'portal',
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/portal/portal.routes').then(m => m.PORTAL_ROUTES),
+  },
+  {
     path: '',
     component: LayoutComponent,
     canActivate: [authGuard],
