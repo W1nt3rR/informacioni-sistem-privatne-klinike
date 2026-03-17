@@ -101,7 +101,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         // Conflict: doctor busy
         var doctorBusy = await db.Appointments.AnyAsync(a =>
             a.DoctorId == req.DoctorId &&
-            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" &&
+            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio" &&
             a.DatumVreme < kraj &&
             a.DatumVreme.AddMinutes(a.TrajanjeMinuta) > req.DatumVreme);
         if (doctorBusy) return BadRequest("Lekar je zauzet u odabranom terminu.");
@@ -109,10 +109,17 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         // Conflict: office busy
         var officeBusy = await db.Appointments.AnyAsync(a =>
             a.OfficeId == req.OfficeId &&
-            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" &&
+            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio" &&
             a.DatumVreme < kraj &&
             a.DatumVreme.AddMinutes(a.TrajanjeMinuta) > req.DatumVreme);
         if (officeBusy) return BadRequest("Ordinacija je zauzeta u odabranom terminu.");
+
+        // Self-appointment guard
+        var doctor = await db.Doctors.FirstOrDefaultAsync(d => d.DoctorId == req.DoctorId);
+        var patient = await db.Patients.FirstOrDefaultAsync(p => p.PatientId == req.PatientId);
+        if (doctor != null && patient != null
+            && !string.IsNullOrEmpty(doctor.UserId) && doctor.UserId == patient.UserId)
+            return BadRequest("Lekar ne može zakazati termin sam sebi.");
 
         var appointment = new Appointment
         {
@@ -166,7 +173,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         // Conflict: doctor busy (exclude this appointment)
         var doctorBusy = await db.Appointments.AnyAsync(a =>
             a.DoctorId == appointment.DoctorId && a.AppointmentId != id &&
-            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" &&
+            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio" &&
             a.DatumVreme < kraj &&
             a.DatumVreme.AddMinutes(a.TrajanjeMinuta) > req.DatumVreme);
         if (doctorBusy) return BadRequest("Lekar je zauzet u odabranom terminu.");
@@ -174,7 +181,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         // Conflict: office busy (exclude this appointment)
         var officeBusy = await db.Appointments.AnyAsync(a =>
             a.OfficeId == officeId && a.AppointmentId != id &&
-            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" &&
+            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio" &&
             a.DatumVreme < kraj &&
             a.DatumVreme.AddMinutes(a.TrajanjeMinuta) > req.DatumVreme);
         if (officeBusy) return BadRequest("Ordinacija je zauzeta u odabranom terminu.");
@@ -191,7 +198,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "admin,recepcija,lekar")]
     public async Task<IActionResult> Cancel(int id, CancelAppointmentRequest req)
     {
-        var appointment = await db.Appointments.FindAsync(id);
+        var appointment = await db.Appointments.Include(a => a.Service).FirstOrDefaultAsync(a => a.AppointmentId == id);
         if (appointment == null) return NotFound();
 
         if (appointment.Status != "zakazan")
@@ -222,7 +229,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
                 Tip = "raspored",
                 PrimalacTip = "pacijent",
                 PrimalacId = item.PatientId,
-                Sadrzaj = $"Oslobodio se termin za uslugu koju čekate. Kontaktirajte kliniku za zakazivanje.",
+                Sadrzaj = $"Oslobodio se termin za {appointment.Service?.Naziv ?? "uslugu"} dana {appointment.DatumVreme:dd.MM.yyyy} u {appointment.DatumVreme:HH:mm}. Kontaktirajte kliniku za zakazivanje.",
                 DatumSlanja = DateTime.UtcNow,
                 AppointmentId = appointment.AppointmentId,
             });
@@ -239,6 +246,10 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         var appointment = await db.Appointments.FindAsync(id);
         if (appointment == null) return NotFound();
 
+        string[] validStatuses = ["zakazan", "realizovan", "otkazao_pacijent", "otkazala_klinika", "nije_se_pojavio", "zahtev"];
+        if (!validStatuses.Contains(status))
+            return BadRequest($"Nevažeći status: {status}");
+
         appointment.Status = status;
         await db.SaveChangesAsync();
         return NoContent();
@@ -253,7 +264,8 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
             .Include(a => a.Doctor).ThenInclude(d => d.User)
             .Include(a => a.Service)
             .Include(a => a.Office)
-            .Where(a => a.DatumVreme >= from && a.DatumVreme <= to);
+            .Where(a => a.DatumVreme >= from && a.DatumVreme <= to)
+            .Where(a => a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika");
 
         if (doctorId.HasValue) query = query.Where(a => a.DoctorId == doctorId.Value);
 
@@ -271,7 +283,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
 
     [HttpGet("available-slots")]
     public async Task<ActionResult<List<AvailableSlotResponse>>> AvailableSlots(
-        [FromQuery] int doctorId, [FromQuery] int serviceId, [FromQuery] string date)
+        [FromQuery] int doctorId, [FromQuery] int serviceId, [FromQuery] string date, [FromQuery] int? officeId)
     {
         if (!DateOnly.TryParse(date, out var dateOnly))
             return BadRequest("Nevažeći format datuma.");
@@ -298,9 +310,9 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         var existing = await db.Appointments
             .Where(a => a.DoctorId == doctorId &&
                         a.DatumVreme >= dateStart && a.DatumVreme <= dateEnd &&
-                        a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika")
+                        a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio")
             .OrderBy(a => a.DatumVreme)
-            .Select(a => new { a.DatumVreme, a.TrajanjeMinuta })
+            .Select(a => new { a.DatumVreme, a.TrajanjeMinuta, a.OfficeId })
             .ToListAsync();
 
         // Generate slots
@@ -311,9 +323,16 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
             var slotStart = dateOnly.ToDateTime(current);
             var slotEnd = slotStart.AddMinutes(duration);
 
-            var conflict = existing.Any(e =>
+            var doctorConflict = existing.Any(e =>
                 e.DatumVreme < slotEnd &&
                 e.DatumVreme.AddMinutes(e.TrajanjeMinuta) > slotStart);
+
+            var officeConflict = officeId.HasValue && existing.Any(e =>
+                e.OfficeId == officeId.Value &&
+                e.DatumVreme < slotEnd &&
+                e.DatumVreme.AddMinutes(e.TrajanjeMinuta) > slotStart);
+
+            var conflict = doctorConflict || officeConflict;
 
             if (!conflict)
             {

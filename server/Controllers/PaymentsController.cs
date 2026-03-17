@@ -40,6 +40,10 @@ public class PaymentsController(AppDbContext db) : ControllerBase
         if (invoice.StatusNaplate == "placeno")
             return BadRequest("Invoice is already fully paid");
 
+        var totalPaid = invoice.Payments.Sum(p => p.Iznos) + req.Iznos;
+        if (totalPaid > invoice.IznosZaNaplatu)
+            return BadRequest("Iznos premašuje dugovanje.");
+
         var payment = new Payment
         {
             InvoiceId = invoiceId,
@@ -51,7 +55,7 @@ public class PaymentsController(AppDbContext db) : ControllerBase
 
         db.Payments.Add(payment);
 
-        var totalPaid = invoice.Payments.Sum(p => p.Iznos) + req.Iznos;
+        totalPaid = invoice.Payments.Sum(p => p.Iznos) + req.Iznos;
         if (totalPaid >= invoice.IznosZaNaplatu)
             invoice.StatusNaplate = "placeno";
         else

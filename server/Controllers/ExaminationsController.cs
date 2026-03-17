@@ -86,6 +86,10 @@ public class ExaminationsController(AppDbContext db) : ControllerBase
         if (appointment.Status != "zakazan")
             return BadRequest("Pregled se može kreirati samo za zakazan termin.");
 
+        if (!string.IsNullOrEmpty(appointment.Doctor.UserId)
+            && appointment.Doctor.UserId == appointment.Patient.UserId)
+            return BadRequest("Lekar ne može obaviti pregled sam sebi.");
+
         var existing = await db.Examinations.AnyAsync(e => e.AppointmentId == req.AppointmentId);
         if (existing)
             return BadRequest("Pregled za ovaj termin već postoji.");

@@ -103,6 +103,9 @@ public class PortalController(
         var doctor = await db.Doctors.FindAsync(req.DoctorId);
         if (doctor is null) return BadRequest(new { message = "Lekar nije pronađen." });
 
+        if (doctor.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier))
+            return BadRequest(new { message = "Ne možete zakazati termin kod sebe." });
+
         var appointment = new Appointment
         {
             PatientId = patient.PatientId,
@@ -110,7 +113,7 @@ public class PortalController(
             ServiceId = req.ServiceId,
             DatumVreme = req.DatumVreme,
             TrajanjeMinuta = service.TrajanjeMinuta,
-            Status = "zakazan",
+            Status = "zahtev",
             RazlogPromene = req.Napomena,
             CreatorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!
         };
@@ -185,8 +188,8 @@ public class PortalController(
         {
             PosiljalacTip = "pacijent",
             PosiljalacId = patient.PatientId,
-            PrimalacTip = "korisnik",
-            PrimalacId = 0, // Reception / admin — will be handled by staff
+            PrimalacTip = "recepcija",
+            PrimalacId = patient.PatientId, // used as reference back to the patient
             Sadrzaj = req.Sadrzaj,
             DatumSlanja = DateTime.UtcNow
         };

@@ -96,11 +96,13 @@ export class RequestAppointmentComponent implements OnInit {
     this.errorMessage.set('');
 
     const dt = new Date(`${this.model.datum}T${this.model.vreme}:00`);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const localIso = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}:00`;
 
     this.api.post('portal/appointment-requests', {
       serviceId: this.model.serviceId,
       doctorId: this.model.doctorId,
-      datumVreme: dt.toISOString(),
+      datumVreme: localIso,
       napomena: this.model.napomena || null,
     }).subscribe({
       next: () => {

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,12 @@ public class WaitingListController(AppDbContext db) : ControllerBase
     public async Task<ActionResult<WaitingListItemResponse>> Create(
         [FromBody] CreateWaitingListItemRequest req)
     {
+        // Duplicate check: same patient + service already active
+        var duplicate = await db.WaitingListItems.AnyAsync(w =>
+            w.PatientId == req.PatientId && w.ServiceId == req.ServiceId && w.Status == "aktivan");
+        if (duplicate)
+            return BadRequest(new { message = "Pacijent je već na listi čekanja za ovu uslugu." });
+
         var item = new WaitingListItem
         {
             PatientId = req.PatientId,
@@ -111,5 +118,77 @@ public class WaitingListController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    [HttpPost("{id}/convert")]
+    [Authorize(Roles = "admin,recepcija")]
+    public async Task<IActionResult> Convert(int id, [FromBody] ConvertWaitingListRequest req)
+    {
+        var item = await db.WaitingListItems
+            .Include(w => w.Patient)
+            .Include(w => w.Service)
+            .FirstOrDefaultAsync(w => w.WaitingListItemId == id);
+
+        if (item is null) return NotFound();
+        if (item.Status != "aktivan")
+            return BadRequest(new { message = "Samo aktivne stavke mogu biti pretvorene u termin." });
+
+        var doctorId = req.DoctorId ?? item.DoctorId;
+        if (doctorId is null)
+            return BadRequest(new { message = "Morate odabrati lekara." });
+
+        var service = item.Service;
+        var trajanje = service.TrajanjeMinuta;
+        var kraj = req.DatumVreme.AddMinutes(trajanje);
+
+        // Conflict: non-working day
+        var dateOnly = DateOnly.FromDateTime(req.DatumVreme);
+        var isNonWorking = await db.NonWorkingDays.AnyAsync(n => n.Datum == dateOnly);
+        if (isNonWorking) return BadRequest(new { message = "Odabrani datum je neradni dan." });
+
+        // Conflict: working hours
+        var dayOfWeek = (int)req.DatumVreme.DayOfWeek;
+        if (dayOfWeek == 0) dayOfWeek = 7;
+        var wh = await db.WorkingHours.FirstOrDefaultAsync(w =>
+            w.DoctorId == doctorId.Value && w.DanUNedelji == dayOfWeek);
+        if (wh == null) return BadRequest(new { message = "Lekar ne radi tog dana." });
+
+        var timeStart = TimeOnly.FromDateTime(req.DatumVreme);
+        var timeEnd = TimeOnly.FromDateTime(kraj);
+        if (timeStart < wh.VremeOd || timeEnd > wh.VremeDo)
+            return BadRequest(new { message = "Termin je van radnog vremena lekara." });
+
+        // Conflict: doctor busy
+        var doctorBusy = await db.Appointments.AnyAsync(a =>
+            a.DoctorId == doctorId.Value &&
+            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio" &&
+            a.DatumVreme < kraj &&
+            a.DatumVreme.AddMinutes(a.TrajanjeMinuta) > req.DatumVreme);
+        if (doctorBusy) return BadRequest(new { message = "Lekar je zauzet u odabranom terminu." });
+
+        // Conflict: office busy
+        var officeBusy = await db.Appointments.AnyAsync(a =>
+            a.OfficeId == req.OfficeId &&
+            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio" &&
+            a.DatumVreme < kraj &&
+            a.DatumVreme.AddMinutes(a.TrajanjeMinuta) > req.DatumVreme);
+        if (officeBusy) return BadRequest(new { message = "Ordinacija je zauzeta u odabranom terminu." });
+
+        var appointment = new Appointment
+        {
+            PatientId = item.PatientId,
+            DoctorId = doctorId.Value,
+            ServiceId = item.ServiceId,
+            OfficeId = req.OfficeId,
+            DatumVreme = req.DatumVreme,
+            TrajanjeMinuta = trajanje,
+            CreatorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!,
+        };
+
+        db.Appointments.Add(appointment);
+        item.Status = "zakazan";
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Termin uspešno zakazan sa liste čekanja.", appointmentId = appointment.AppointmentId });
     }
 }

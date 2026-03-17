@@ -182,12 +182,15 @@ export class AppointmentDialogComponent implements OnInit {
     const d = new Date(val.date);
     const datumVreme = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
 
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const localIso = `${datumVreme.getFullYear()}-${pad(datumVreme.getMonth() + 1)}-${pad(datumVreme.getDate())}T${pad(h)}:${pad(m)}:00`;
+
     const body: CreateAppointmentRequest = {
       patientId: val.patientId,
       doctorId: val.doctorId,
       serviceId: val.serviceId,
       officeId: val.officeId,
-      datumVreme: datumVreme.toISOString(),
+      datumVreme: localIso,
     };
 
     this.api.post('appointments', body).subscribe({

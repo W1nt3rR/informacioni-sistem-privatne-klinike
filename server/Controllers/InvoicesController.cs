@@ -97,17 +97,18 @@ public class InvoicesController(AppDbContext db) : ControllerBase
         {
             var svc = services[item.ServiceId];
             var lineTotal = svc.Cena * item.Kolicina;
+            var discountedTotal = lineTotal - (lineTotal * item.PopustProcenat / 100);
             var invoiceItem = new InvoiceItem
             {
                 ServiceId = item.ServiceId,
                 ExaminationId = item.ExaminationId,
                 JedinicnaCena = svc.Cena,
                 Kolicina = item.Kolicina,
-                PopustProcenat = 0,
-                Iznos = lineTotal
+                PopustProcenat = item.PopustProcenat,
+                Iznos = discountedTotal
             };
             invoice.Items.Add(invoiceItem);
-            total += lineTotal;
+            total += discountedTotal;
         }
 
         invoice.UkupanIznos = total;

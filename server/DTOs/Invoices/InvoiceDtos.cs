@@ -54,7 +54,8 @@ public record CreateInvoiceRequest(
 public record CreateInvoiceItemRequest(
     int ServiceId,
     int? ExaminationId,
-    int Kolicina);
+    int Kolicina,
+    decimal PopustProcenat = 0);
 
 public record CreatePaymentRequest(
     decimal Iznos,

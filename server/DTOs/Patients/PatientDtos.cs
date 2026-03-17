@@ -43,7 +43,8 @@ public record CreatePatientRequest(
     string Telefon,
     string? Email,
     string? BrojOsiguranja,
-    string? Napomene);
+    string? Napomene,
+    string? UserId = null);
 
 public record UpdatePatientRequest(
     string Ime,

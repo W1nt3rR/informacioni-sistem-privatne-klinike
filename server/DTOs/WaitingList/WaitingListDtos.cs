@@ -22,3 +22,8 @@ public record CreateWaitingListItemRequest(
 
 public record UpdateWaitingListStatusRequest(
     string Status);
+
+public record ConvertWaitingListRequest(
+    DateTime DatumVreme,
+    int OfficeId,
+    int? DoctorId);

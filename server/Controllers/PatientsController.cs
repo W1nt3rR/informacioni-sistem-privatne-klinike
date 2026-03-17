@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrivateClinic.API.Data;
@@ -10,7 +11,7 @@ namespace PrivateClinic.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PatientsController(AppDbContext db) : ControllerBase
+public class PatientsController(AppDbContext db, UserManager<ApplicationUser> userManager) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<PatientListResponse>>> GetAll([FromQuery] string? search, [FromQuery] bool? aktivan)
@@ -134,8 +135,22 @@ public class PatientsController(AppDbContext db) : ControllerBase
             Napomene = request.Napomene
         };
 
+        if (!string.IsNullOrEmpty(request.UserId))
+        {
+            var user = await userManager.FindByIdAsync(request.UserId);
+            if (user == null) return BadRequest("Korisnik sa datim UserId ne postoji.");
+            entity.UserId = request.UserId;
+        }
+
         db.Patients.Add(entity);
         await db.SaveChangesAsync();
+
+        if (!string.IsNullOrEmpty(request.UserId))
+        {
+            var user = (await userManager.FindByIdAsync(request.UserId))!;
+            if (!await userManager.IsInRoleAsync(user, "pacijent"))
+                await userManager.AddToRoleAsync(user, "pacijent");
+        }
 
         return CreatedAtAction(nameof(GetById), new { id = entity.PatientId },
             new PatientDetailResponse(

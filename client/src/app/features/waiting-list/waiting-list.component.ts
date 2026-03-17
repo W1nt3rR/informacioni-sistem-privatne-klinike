@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../shared/services/api.service';
 import { DialogService } from '../../shared/services/dialog.service';
 import { WaitingListDialogComponent } from './waiting-list-dialog.component';
+import { WaitingListConvertDialogComponent, ConvertDialogData } from './waiting-list-convert-dialog.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
 
 interface WaitingListItem {
@@ -79,6 +80,12 @@ interface WaitingListItem {
                   <td>
                     <div class="flex gap-1">
                       @if (w.status === 'aktivan') {
+                        <div class="tooltip" data-tip="Zakaži termin">
+                          <button class="btn btn-ghost btn-xs btn-square text-success"
+                                  (click)="convertToAppointment(w)">
+                            <span class="material-icons">calendar_month</span>
+                          </button>
+                        </div>
                         <div class="tooltip" data-tip="Označi kao zakazan">
                           <button class="btn btn-ghost btn-xs btn-square text-primary"
                                   (click)="updateStatus(w.waitingListItemId, 'zakazan')">
@@ -144,6 +151,19 @@ export class WaitingListComponent implements OnInit {
       if (!confirmed) return;
       this.api.delete(`waiting-list/${id}`).subscribe(() => this.load());
     });
+  }
+
+  convertToAppointment(w: WaitingListItem): void {
+    const data: ConvertDialogData = {
+      waitingListItemId: w.waitingListItemId,
+      patientName: w.patientName,
+      serviceName: w.serviceName,
+      serviceId: w.serviceId,
+      doctorId: w.doctorId,
+      doctorName: w.doctorName,
+    };
+    this.dialogService.open(WaitingListConvertDialogComponent, data)
+      .afterClosed.subscribe(ok => { if (ok) this.load(); });
   }
 
   priorityLabel(p: number): string {
