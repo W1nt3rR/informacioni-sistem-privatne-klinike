@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
-import { PlaceholderComponent } from '../../shared/components/placeholder.component';
+import { PatientListComponent } from './patient-list.component';
+import { PatientDetailComponent } from './patient-detail.component';
 
 export const PATIENT_ROUTES: Routes = [
-  { path: '', component: PlaceholderComponent, data: { title: 'Pacijenti' } },
+  { path: '', component: PatientListComponent, data: { title: 'Pacijenti' } },
+  { path: ':id', component: PatientDetailComponent, data: { title: 'Detalji pacijenta' } },
 ];
