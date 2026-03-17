@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using PrivateClinic.API.Models;
 
 namespace PrivateClinic.API.Data;
@@ -9,7 +10,9 @@ public static class DbSeeder
     {
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var db = services.GetRequiredService<AppDbContext>();
 
+        // --- Roles ---
         string[] roles = ["admin", "recepcija", "lekar", "menadzer", "pacijent"];
         foreach (var role in roles)
         {
@@ -17,10 +20,12 @@ public static class DbSeeder
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
 
+        // --- Admin User ---
         const string adminUserName = "admin";
-        if (await userManager.FindByNameAsync(adminUserName) is null)
+        ApplicationUser? adminUser = await userManager.FindByNameAsync(adminUserName);
+        if (adminUser is null)
         {
-            var admin = new ApplicationUser
+            adminUser = new ApplicationUser
             {
                 UserName = adminUserName,
                 Email = "admin@clinic.local",
@@ -28,9 +33,215 @@ public static class DbSeeder
                 Prezime = "System",
                 EmailConfirmed = true
             };
-            var result = await userManager.CreateAsync(admin, "Admin123");
+            var result = await userManager.CreateAsync(adminUser, "Admin123");
             if (result.Succeeded)
-                await userManager.AddToRoleAsync(admin, "admin");
+                await userManager.AddToRoleAsync(adminUser, "admin");
         }
+
+        // Skip the rest if data already seeded
+        if (await db.Specializations.AnyAsync())
+            return;
+
+        // --- Specializations ---
+        var specOpsta = new Specialization { Naziv = "Opšta medicina", Opis = "Opšta medicinska praksa" };
+        var specKardio = new Specialization { Naziv = "Kardiologija", Opis = "Bolesti srca i krvnih sudova" };
+        var specDerma = new Specialization { Naziv = "Dermatologija", Opis = "Bolesti kože" };
+        var specOrtop = new Specialization { Naziv = "Ortopedija", Opis = "Bolesti koštano-zglobnog sistema" };
+        var specNeuro = new Specialization { Naziv = "Neurologija", Opis = "Bolesti nervnog sistema" };
+        var specORL = new Specialization { Naziv = "Otorinolaringologija", Opis = "Bolesti uha, grla i nosa" };
+        db.Specializations.AddRange(specOpsta, specKardio, specDerma, specOrtop, specNeuro, specORL);
+        await db.SaveChangesAsync();
+
+        // --- Diagnoses (ICD-10 subset) ---
+        var diagnoses = new[]
+        {
+            new Diagnosis { Sifra = "J06.9", Naziv = "Akutna infekcija gornjeg respiratornog trakta", Opis = "Prehlada" },
+            new Diagnosis { Sifra = "I10", Naziv = "Esencijalna hipertenzija", Opis = "Visok krvni pritisak" },
+            new Diagnosis { Sifra = "E11", Naziv = "Dijabetes melitus tip 2", Opis = "Šećerna bolest" },
+            new Diagnosis { Sifra = "M54.5", Naziv = "Bol u donjem delu leđa", Opis = "Lumbago" },
+            new Diagnosis { Sifra = "L20", Naziv = "Atopijski dermatitis", Opis = "Ekcem" },
+            new Diagnosis { Sifra = "G43", Naziv = "Migrena", Opis = "Hronična glavobolja" },
+            new Diagnosis { Sifra = "J45", Naziv = "Astma", Opis = "Hronična bolest disajnih puteva" },
+            new Diagnosis { Sifra = "K21", Naziv = "Gastroezofagealna refluksna bolest", Opis = "GERB" },
+            new Diagnosis { Sifra = "M75", Naziv = "Lezije ramena", Opis = "Oštećenja ramenog zgloba" },
+            new Diagnosis { Sifra = "H65", Naziv = "Upala srednjeg uha", Opis = "Otitis media" },
+        };
+        db.Diagnoses.AddRange(diagnoses);
+        await db.SaveChangesAsync();
+
+        // --- Services ---
+        var svcOpsti = new Service { Naziv = "Opšti pregled", Opis = "Početni opšti lekarski pregled", TrajanjeMinuta = 30, Cena = 3000m, SpecializationId = specOpsta.SpecializationId };
+        var svcKardio = new Service { Naziv = "Kardiološki pregled", Opis = "Pregled kardiologa sa EKG-om", TrajanjeMinuta = 45, Cena = 5000m, SpecializationId = specKardio.SpecializationId };
+        var svcEKG = new Service { Naziv = "EKG", Opis = "Elektrokardiogram", TrajanjeMinuta = 15, Cena = 2000m, SpecializationId = specKardio.SpecializationId };
+        var svcDerma = new Service { Naziv = "Dermatološki pregled", Opis = "Pregled kože", TrajanjeMinuta = 30, Cena = 4000m, SpecializationId = specDerma.SpecializationId };
+        var svcDermoskop = new Service { Naziv = "Dermoskopija", Opis = "Pregled mladeža dermoskopom", TrajanjeMinuta = 20, Cena = 3500m, SpecializationId = specDerma.SpecializationId };
+        var svcOrtop = new Service { Naziv = "Ortopedski pregled", Opis = "Pregled ortopeda", TrajanjeMinuta = 30, Cena = 4500m, SpecializationId = specOrtop.SpecializationId };
+        var svcNeuro = new Service { Naziv = "Neurološki pregled", Opis = "Pregled neurologa", TrajanjeMinuta = 45, Cena = 5500m, SpecializationId = specNeuro.SpecializationId };
+        var svcORL = new Service { Naziv = "ORL pregled", Opis = "Pregled uha, grla i nosa", TrajanjeMinuta = 30, Cena = 4000m, SpecializationId = specORL.SpecializationId };
+        db.Services.AddRange(svcOpsti, svcKardio, svcEKG, svcDerma, svcDermoskop, svcOrtop, svcNeuro, svcORL);
+        await db.SaveChangesAsync();
+
+        // --- Offices ---
+        var office1 = new Office { Naziv = "Ordinacija 1", Lokacija = "Prizemlje, levo", Oprema = "EKG aparat, stetoskop" };
+        var office2 = new Office { Naziv = "Ordinacija 2", Lokacija = "Prizemlje, desno", Oprema = "Dermoskop, lupa" };
+        var office3 = new Office { Naziv = "Ordinacija 3", Lokacija = "Sprat 1", Oprema = "Rendgen, UZ" };
+        var office4 = new Office { Naziv = "Ordinacija 4", Lokacija = "Sprat 1", Oprema = "EEG aparat" };
+        db.Offices.AddRange(office1, office2, office3, office4);
+        await db.SaveChangesAsync();
+
+        // --- Receptionist User ---
+        var recepUser = new ApplicationUser
+        {
+            UserName = "recepcija1",
+            Email = "recepcija@clinic.local",
+            Ime = "Jelena",
+            Prezime = "Petrović",
+            EmailConfirmed = true
+        };
+        await userManager.CreateAsync(recepUser, "Recep123");
+        await userManager.AddToRoleAsync(recepUser, "recepcija");
+
+        // --- Manager User ---
+        var mgrUser = new ApplicationUser
+        {
+            UserName = "menadzer1",
+            Email = "menadzer@clinic.local",
+            Ime = "Dragan",
+            Prezime = "Nikolić",
+            EmailConfirmed = true
+        };
+        await userManager.CreateAsync(mgrUser, "Menad123");
+        await userManager.AddToRoleAsync(mgrUser, "menadzer");
+
+        // --- Doctor Users + Doctor records ---
+        async Task<Doctor> CreateDoctor(string username, string email, string ime, string prezime,
+            string titula, string licenca, Specialization spec)
+        {
+            var user = new ApplicationUser
+            {
+                UserName = username, Email = email, Ime = ime, Prezime = prezime, EmailConfirmed = true
+            };
+            await userManager.CreateAsync(user, "Lekar123");
+            await userManager.AddToRoleAsync(user, "lekar");
+            var doctor = new Doctor
+            {
+                UserId = user.Id,
+                SpecializationId = spec.SpecializationId,
+                Titula = titula,
+                LicencaBroj = licenca
+            };
+            db.Doctors.Add(doctor);
+            await db.SaveChangesAsync();
+            return doctor;
+        }
+
+        var drMarko = await CreateDoctor("drmarko", "marko@clinic.local", "Marko", "Jovanović",
+            "dr", "LIC-001", specOpsta);
+        var drMilica = await CreateDoctor("drmilica", "milica@clinic.local", "Milica", "Stanković",
+            "dr", "LIC-002", specKardio);
+        var drNikola = await CreateDoctor("drnikola", "nikola@clinic.local", "Nikola", "Todorović",
+            "dr", "LIC-003", specDerma);
+        var drAna = await CreateDoctor("drana", "ana@clinic.local", "Ana", "Ilić",
+            "dr", "LIC-004", specOrtop);
+        var drPetar = await CreateDoctor("drpetar", "petar@clinic.local", "Petar", "Đorđević",
+            "dr", "LIC-005", specNeuro);
+
+        // --- Doctor-Service links ---
+        db.DoctorServices.AddRange(
+            new DoctorService { DoctorId = drMarko.DoctorId, ServiceId = svcOpsti.ServiceId },
+            new DoctorService { DoctorId = drMilica.DoctorId, ServiceId = svcKardio.ServiceId },
+            new DoctorService { DoctorId = drMilica.DoctorId, ServiceId = svcEKG.ServiceId },
+            new DoctorService { DoctorId = drNikola.DoctorId, ServiceId = svcDerma.ServiceId },
+            new DoctorService { DoctorId = drNikola.DoctorId, ServiceId = svcDermoskop.ServiceId },
+            new DoctorService { DoctorId = drAna.DoctorId, ServiceId = svcOrtop.ServiceId },
+            new DoctorService { DoctorId = drPetar.DoctorId, ServiceId = svcNeuro.ServiceId }
+        );
+        await db.SaveChangesAsync();
+
+        // --- Working Hours (Mon-Fri 08:00-16:00 for all doctors) ---
+        foreach (var doc in new[] { drMarko, drMilica, drNikola, drAna, drPetar })
+        {
+            for (int day = 1; day <= 5; day++)
+            {
+                db.WorkingHours.Add(new WorkingHours
+                {
+                    DoctorId = doc.DoctorId,
+                    DanUNedelji = day,
+                    VremeOd = new TimeOnly(8, 0),
+                    VremeDo = new TimeOnly(16, 0)
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+
+        // --- Non-Working Days ---
+        var year = DateTime.UtcNow.Year;
+        db.NonWorkingDays.AddRange(
+            new NonWorkingDay { Datum = new DateOnly(year, 1, 1), Naziv = "Nova godina" },
+            new NonWorkingDay { Datum = new DateOnly(year, 1, 2), Naziv = "Nova godina (drugi dan)" },
+            new NonWorkingDay { Datum = new DateOnly(year, 2, 15), Naziv = "Sretenje - Dan državnosti" },
+            new NonWorkingDay { Datum = new DateOnly(year, 5, 1), Naziv = "Praznik rada" },
+            new NonWorkingDay { Datum = new DateOnly(year, 11, 11), Naziv = "Dan primirja" }
+        );
+        await db.SaveChangesAsync();
+
+        // --- Patients ---
+        var pat1 = new Patient { Ime = "Milan", Prezime = "Marković", JMBG = "0101990710001", DatumRodjenja = new DateOnly(1990, 1, 1), Pol = "M", Telefon = "0641234567", Email = "milan@email.com", Adresa = "Bulevar Kralja Aleksandra 10, Beograd" };
+        var pat2 = new Patient { Ime = "Jovana", Prezime = "Kostić", JMBG = "1505985735002", DatumRodjenja = new DateOnly(1985, 5, 15), Pol = "Ž", Telefon = "0659876543", Email = "jovana@email.com", Adresa = "Knez Mihailova 5, Beograd" };
+        var pat3 = new Patient { Ime = "Stefan", Prezime = "Đurić", JMBG = "2003978710003", DatumRodjenja = new DateOnly(1978, 3, 20), Pol = "M", Telefon = "0621112233", Email = "stefan@email.com", Adresa = "Vojvode Stepe 120, Beograd" };
+        var pat4 = new Patient { Ime = "Marija", Prezime = "Simić", JMBG = "0812000735004", DatumRodjenja = new DateOnly(2000, 12, 8), Pol = "Ž", Telefon = "0634445566", Email = "marija@email.com", Adresa = "Maksima Gorkog 22, Novi Sad" };
+        var pat5 = new Patient { Ime = "Nikola", Prezime = "Pavlović", JMBG = "3006995710005", DatumRodjenja = new DateOnly(1995, 6, 30), Pol = "M", Telefon = "0607778899", Email = "nikola@email.com", Adresa = "Bulevar Oslobođenja 45, Novi Sad", BrojOsiguranja = "123456789" };
+        db.Patients.AddRange(pat1, pat2, pat3, pat4, pat5);
+        await db.SaveChangesAsync();
+
+        // --- Allergies ---
+        db.Allergies.AddRange(
+            new Allergy { PatientId = pat1.PatientId, NazivAlergena = "Penicilin", Ozbiljnost = "teska", Opis = "Anafilaktička reakcija" },
+            new Allergy { PatientId = pat2.PatientId, NazivAlergena = "Polen", Ozbiljnost = "umerena", Opis = "Sezonski alergijski rinitis" },
+            new Allergy { PatientId = pat3.PatientId, NazivAlergena = "Aspirin", Ozbiljnost = "blaga", Opis = "Kožni osip" }
+        );
+        await db.SaveChangesAsync();
+
+        // --- Discounts ---
+        db.Discounts.AddRange(
+            new Discount { Naziv = "Penzionerski popust", Procenat = 10m, Aktivan = true },
+            new Discount { Naziv = "Popust za studente", Procenat = 15m, Aktivan = true },
+            new Discount { Naziv = "Paket pregled 3+", Procenat = 5m, Aktivan = true }
+        );
+        await db.SaveChangesAsync();
+
+        // --- Appointments (future and past) ---
+        var now = DateTime.UtcNow;
+        var nextMon = now.AddDays((8 - (int)now.DayOfWeek) % 7);
+        if (nextMon <= now) nextMon = nextMon.AddDays(7);
+        nextMon = new DateTime(nextMon.Year, nextMon.Month, nextMon.Day, 9, 0, 0, DateTimeKind.Utc);
+
+        var creatorId = adminUser!.Id;
+
+        // Future appointments
+        db.Appointments.AddRange(
+            new Appointment { PatientId = pat1.PatientId, DoctorId = drMarko.DoctorId, ServiceId = svcOpsti.ServiceId, OfficeId = office1.OfficeId, DatumVreme = nextMon, TrajanjeMinuta = 30, CreatorId = creatorId },
+            new Appointment { PatientId = pat2.PatientId, DoctorId = drMilica.DoctorId, ServiceId = svcKardio.ServiceId, OfficeId = office1.OfficeId, DatumVreme = nextMon.AddHours(1), TrajanjeMinuta = 45, CreatorId = creatorId },
+            new Appointment { PatientId = pat3.PatientId, DoctorId = drNikola.DoctorId, ServiceId = svcDerma.ServiceId, OfficeId = office2.OfficeId, DatumVreme = nextMon.AddDays(1).AddHours(1), TrajanjeMinuta = 30, CreatorId = creatorId },
+            new Appointment { PatientId = pat4.PatientId, DoctorId = drAna.DoctorId, ServiceId = svcOrtop.ServiceId, OfficeId = office3.OfficeId, DatumVreme = nextMon.AddDays(2), TrajanjeMinuta = 30, CreatorId = creatorId },
+            new Appointment { PatientId = pat5.PatientId, DoctorId = drPetar.DoctorId, ServiceId = svcNeuro.ServiceId, OfficeId = office4.OfficeId, DatumVreme = nextMon.AddDays(3), TrajanjeMinuta = 45, CreatorId = creatorId }
+        );
+
+        // Past appointment (realized)
+        db.Appointments.Add(new Appointment
+        {
+            PatientId = pat1.PatientId, DoctorId = drMarko.DoctorId, ServiceId = svcOpsti.ServiceId,
+            OfficeId = office1.OfficeId, DatumVreme = now.AddDays(-7), TrajanjeMinuta = 30,
+            Status = "realizovan", CreatorId = creatorId
+        });
+        await db.SaveChangesAsync();
+
+        // --- Waiting List Items ---
+        db.WaitingListItems.AddRange(
+            new WaitingListItem { PatientId = pat2.PatientId, ServiceId = svcKardio.ServiceId, DoctorId = drMilica.DoctorId, Prioritet = 1, Napomena = "Hitno - bol u grudima" },
+            new WaitingListItem { PatientId = pat4.PatientId, ServiceId = svcDermoskop.ServiceId, Prioritet = 2, Napomena = "Kontrolni pregled mladeža" },
+            new WaitingListItem { PatientId = pat5.PatientId, ServiceId = svcOrtop.ServiceId, Prioritet = 3 }
+        );
+        await db.SaveChangesAsync();
     }
 }

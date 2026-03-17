@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
-import { PlaceholderComponent } from '../../shared/components/placeholder.component';
+import { WaitingListComponent } from './waiting-list.component';
 
 export const WAITING_LIST_ROUTES: Routes = [
-  { path: '', component: PlaceholderComponent, data: { title: 'Lista čekanja' } },
+  { path: '', component: WaitingListComponent, data: { title: 'Lista čekanja' } },
 ];

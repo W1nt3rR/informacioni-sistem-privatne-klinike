@@ -121,3 +121,82 @@ Sistem je namenjen **administratorima/recepciji**, **lekarima** i **menadžmentu
 - Pacijent može podneti zahtev za termin *(odobrenje od recepcije)*
 - Pacijent može preuzeti izveštaj ili potvrdu o pregledu *(ako klinika dozvoli)*
 - Kanal za poruke *(pitanje recepciji / lekaru)* – kao osnovna funkcionalnost
+
+---
+
+## Tehnički opis i pokretanje
+
+### Tehnologije
+
+| Sloj      | Tehnologija                                   |
+| --------- | --------------------------------------------- |
+| Backend   | ASP.NET Core (.NET 10), Entity Framework Core |
+| Frontend  | Angular 21, Angular Material, TailwindCSS v4  |
+| Baza      | SQL Server LocalDB                            |
+| Auth      | ASP.NET Identity + JWT Bearer                 |
+| PDF       | QuestPDF                                      |
+| API Docs  | Swagger / OpenAPI                             |
+
+### Preduslovi
+
+- [.NET 10 SDK](https://dot.net/download)
+- [Node.js](https://nodejs.org/) (v20+)
+- SQL Server LocalDB (dolazi sa Visual Studio ili se može instalirati zasebno)
+
+### Pokretanje servera
+
+```bash
+cd server
+dotnet run
+```
+
+Server se pokreće na `http://localhost:5181` (HTTP) i `https://localhost:7147` (HTTPS).
+Swagger UI je dostupan na `http://localhost:5181/swagger`.
+
+Pri prvom pokretanju automatski se:
+- kreira baza `PrivateClinicDB` na `(localdb)\MSSQLLocalDB`
+- primenjuju migracije
+- ubacuju **seed podaci** (uloge, korisnici, specijalizacije, dijagnoze, usluge, ordinacije, lekari, pacijenti, termini)
+
+### Pokretanje klijenta
+
+```bash
+cd client
+npm install --legacy-peer-deps
+npx ng serve
+```
+
+Klijent je dostupan na `http://localhost:4200`.
+
+### Demo korisnici (seed podaci)
+
+| Korisničko ime | Lozinka   | Uloga     |
+| -------------- | --------- | --------- |
+| admin          | Admin123  | admin     |
+| recepcija1     | Recep123  | recepcija |
+| menadzer1      | Menad123  | menadzer  |
+| drmarko        | Lekar123  | lekar     |
+| drmilica       | Lekar123  | lekar     |
+| drnikola       | Lekar123  | lekar     |
+| drana          | Lekar123  | lekar     |
+| drpetar        | Lekar123  | lekar     |
+
+### Struktura projekta
+
+```
+PrivateClinic.slnx          # Solution file
+├── server/                 # ASP.NET Core Web API
+│   ├── Controllers/        # API kontroleri
+│   ├── Data/               # AppDbContext, DbSeeder, migracije
+│   ├── DTOs/               # Data Transfer Objects
+│   ├── Middleware/          # Exception handling, audit
+│   ├── Models/             # Entity modeli
+│   ├── Services/           # Auth, Audit servisi
+│   └── Program.cs          # Entry point
+├── client/                 # Angular SPA
+│   └── src/app/
+│       ├── features/       # Feature moduli (po domenima)
+│       ├── shared/         # Zajednički servisi i komponente
+│       └── app.routes.ts   # Rutiranje
+└── docs/                   # Dokumentacija
+```
