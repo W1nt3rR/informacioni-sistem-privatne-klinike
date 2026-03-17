@@ -27,6 +27,11 @@ public class AuditService : IAuditService
     public List<ActivityLog> GetPendingLogs(ChangeTracker changeTracker)
     {
         var logs = new List<ActivityLog>();
+
+        // Skip audit logging when there is no authenticated user (e.g. during seeding)
+        if (_userId is null)
+            return logs;
+
         changeTracker.DetectChanges();
 
         foreach (var entry in changeTracker.Entries())
