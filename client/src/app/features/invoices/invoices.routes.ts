@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
-import { PlaceholderComponent } from '../../shared/components/placeholder.component';
+import { InvoiceListComponent } from './invoice-list.component';
+import { InvoiceDetailComponent } from './invoice-detail.component';
 
 export const INVOICE_ROUTES: Routes = [
-  { path: '', component: PlaceholderComponent, data: { title: 'Računi' } },
+  { path: '', component: InvoiceListComponent },
+  { path: ':id', component: InvoiceDetailComponent },
 ];
