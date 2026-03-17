@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from '../auth/auth.service';
+import { ApiService } from '../../shared/services/api.service';
 
 interface NavItem {
   label: string;
@@ -32,11 +33,13 @@ interface NavGroup {
   templateUrl: './layout.component.html',
   styleUrl: './layout.component.scss',
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   private authService = inject(AuthService);
+  private api = inject(ApiService);
 
   sidenavOpened = signal(true);
   user = this.authService.user;
+  pendingCount = signal(0);
 
   navGroups: NavGroup[] = [
     {
@@ -97,6 +100,14 @@ export class LayoutComponent {
       ],
     },
   ];
+
+  ngOnInit() {
+    this.loadPendingCount();
+  }
+
+  loadPendingCount() {
+    this.api.get<any[]>('notifications?status=ceka').subscribe(r => this.pendingCount.set(r.length));
+  }
 
   toggleSidenav(): void {
     this.sidenavOpened.update(v => !v);

@@ -63,6 +63,15 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <button mat-icon-button routerLink="/notifications" matTooltip="Obaveštenja"
+          class="relative">
+          <mat-icon>notifications</mat-icon>
+          @if (pendingCount() > 0) {
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {{ pendingCount() > 9 ? '9+' : pendingCount() }}
+            </span>
+          }
+        </button>
         <button mat-icon-button [matMenuTriggerFor]="userMenu">
           <mat-icon>account_circle</mat-icon>
         </button>
