@@ -94,8 +94,8 @@ public static class DbSeeder
         {
             UserName = "recepcija1",
             Email = "recepcija@clinic.local",
-            Ime = "Jelena",
-            Prezime = "Petrović",
+            Ime = "Amina",
+            Prezime = "Hadžović",
             EmailConfirmed = true
         };
         await userManager.CreateAsync(recepUser, "Recep123");
@@ -106,8 +106,8 @@ public static class DbSeeder
         {
             UserName = "menadzer1",
             Email = "menadzer@clinic.local",
-            Ime = "Dragan",
-            Prezime = "Nikolić",
+            Ime = "Emir",
+            Prezime = "Muratović",
             EmailConfirmed = true
         };
         await userManager.CreateAsync(mgrUser, "Menad123");
@@ -135,31 +135,31 @@ public static class DbSeeder
             return doctor;
         }
 
-        var drMarko = await CreateDoctor("drmarko", "marko@clinic.local", "Marko", "Jovanović",
+        var drAmir = await CreateDoctor("dramir", "amir@clinic.local", "Amir", "Dizdarević",
             "dr", "LIC-001", specOpsta);
-        var drMilica = await CreateDoctor("drmilica", "milica@clinic.local", "Milica", "Stanković",
+        var drLejla = await CreateDoctor("drlejla", "lejla@clinic.local", "Lejla", "Kurtović",
             "dr", "LIC-002", specKardio);
-        var drNikola = await CreateDoctor("drnikola", "nikola@clinic.local", "Nikola", "Todorović",
+        var drHaris = await CreateDoctor("drharis", "haris@clinic.local", "Haris", "Bihorac",
             "dr", "LIC-003", specDerma);
-        var drAna = await CreateDoctor("drana", "ana@clinic.local", "Ana", "Ilić",
+        var drAmra = await CreateDoctor("dramra", "amra@clinic.local", "Amra", "Softić",
             "dr", "LIC-004", specOrtop);
-        var drPetar = await CreateDoctor("drpetar", "petar@clinic.local", "Petar", "Đorđević",
+        var drAdnan = await CreateDoctor("dradnan", "adnan@clinic.local", "Adnan", "Fetahović",
             "dr", "LIC-005", specNeuro);
 
         // --- Doctor-Service links ---
         db.DoctorServices.AddRange(
-            new DoctorService { DoctorId = drMarko.DoctorId, ServiceId = svcOpsti.ServiceId },
-            new DoctorService { DoctorId = drMilica.DoctorId, ServiceId = svcKardio.ServiceId },
-            new DoctorService { DoctorId = drMilica.DoctorId, ServiceId = svcEKG.ServiceId },
-            new DoctorService { DoctorId = drNikola.DoctorId, ServiceId = svcDerma.ServiceId },
-            new DoctorService { DoctorId = drNikola.DoctorId, ServiceId = svcDermoskop.ServiceId },
-            new DoctorService { DoctorId = drAna.DoctorId, ServiceId = svcOrtop.ServiceId },
-            new DoctorService { DoctorId = drPetar.DoctorId, ServiceId = svcNeuro.ServiceId }
+            new DoctorService { DoctorId = drAmir.DoctorId, ServiceId = svcOpsti.ServiceId },
+            new DoctorService { DoctorId = drLejla.DoctorId, ServiceId = svcKardio.ServiceId },
+            new DoctorService { DoctorId = drLejla.DoctorId, ServiceId = svcEKG.ServiceId },
+            new DoctorService { DoctorId = drHaris.DoctorId, ServiceId = svcDerma.ServiceId },
+            new DoctorService { DoctorId = drHaris.DoctorId, ServiceId = svcDermoskop.ServiceId },
+            new DoctorService { DoctorId = drAmra.DoctorId, ServiceId = svcOrtop.ServiceId },
+            new DoctorService { DoctorId = drAdnan.DoctorId, ServiceId = svcNeuro.ServiceId }
         );
         await db.SaveChangesAsync();
 
         // --- Working Hours (Mon-Fri 08:00-16:00 for all doctors) ---
-        foreach (var doc in new[] { drMarko, drMilica, drNikola, drAna, drPetar })
+        foreach (var doc in new[] { drAmir, drLejla, drHaris, drAmra, drAdnan })
         {
             for (int day = 1; day <= 5; day++)
             {
@@ -180,17 +180,21 @@ public static class DbSeeder
             new NonWorkingDay { Datum = new DateOnly(year, 1, 1), Naziv = "Nova godina" },
             new NonWorkingDay { Datum = new DateOnly(year, 1, 2), Naziv = "Nova godina (drugi dan)" },
             new NonWorkingDay { Datum = new DateOnly(year, 2, 15), Naziv = "Sretenje - Dan državnosti" },
+            new NonWorkingDay { Datum = new DateOnly(year, 3, 30), Naziv = "Ramazanski bajram" },
+            new NonWorkingDay { Datum = new DateOnly(year, 3, 31), Naziv = "Ramazanski bajram (drugi dan)" },
             new NonWorkingDay { Datum = new DateOnly(year, 5, 1), Naziv = "Praznik rada" },
+            new NonWorkingDay { Datum = new DateOnly(year, 6, 6), Naziv = "Kurban bajram" },
+            new NonWorkingDay { Datum = new DateOnly(year, 6, 7), Naziv = "Kurban bajram (drugi dan)" },
             new NonWorkingDay { Datum = new DateOnly(year, 11, 11), Naziv = "Dan primirja" }
         );
         await db.SaveChangesAsync();
 
         // --- Patients ---
-        var pat1 = new Patient { Ime = "Milan", Prezime = "Marković", JMBG = "0101990710001", DatumRodjenja = new DateOnly(1990, 1, 1), Pol = "M", Telefon = "0641234567", Email = "milan@email.com", Adresa = "Bulevar Kralja Aleksandra 10, Beograd" };
-        var pat2 = new Patient { Ime = "Jovana", Prezime = "Kostić", JMBG = "1505985735002", DatumRodjenja = new DateOnly(1985, 5, 15), Pol = "Ž", Telefon = "0659876543", Email = "jovana@email.com", Adresa = "Knez Mihailova 5, Beograd" };
-        var pat3 = new Patient { Ime = "Stefan", Prezime = "Đurić", JMBG = "2003978710003", DatumRodjenja = new DateOnly(1978, 3, 20), Pol = "M", Telefon = "0621112233", Email = "stefan@email.com", Adresa = "Vojvode Stepe 120, Beograd" };
-        var pat4 = new Patient { Ime = "Marija", Prezime = "Simić", JMBG = "0812000735004", DatumRodjenja = new DateOnly(2000, 12, 8), Pol = "Ž", Telefon = "0634445566", Email = "marija@email.com", Adresa = "Maksima Gorkog 22, Novi Sad" };
-        var pat5 = new Patient { Ime = "Nikola", Prezime = "Pavlović", JMBG = "3006995710005", DatumRodjenja = new DateOnly(1995, 6, 30), Pol = "M", Telefon = "0607778899", Email = "nikola@email.com", Adresa = "Bulevar Oslobođenja 45, Novi Sad", BrojOsiguranja = "123456789" };
+        var pat1 = new Patient { Ime = "Edin", Prezime = "Mujović", JMBG = "0101990710001", DatumRodjenja = new DateOnly(1990, 1, 1), Pol = "M", Telefon = "0641234567", Email = "edin.mujovic@email.com", Adresa = "28. Novembra 15, Novi Pazar" };
+        var pat2 = new Patient { Ime = "Azra", Prezime = "Kolašinac", JMBG = "1505985735002", DatumRodjenja = new DateOnly(1985, 5, 15), Pol = "Ž", Telefon = "0659876543", Email = "azra.kolasinac@email.com", Adresa = "Rifata Burdževića 8, Novi Pazar" };
+        var pat3 = new Patient { Ime = "Senad", Prezime = "Ljajić", JMBG = "2003978710003", DatumRodjenja = new DateOnly(1978, 3, 20), Pol = "M", Telefon = "0621112233", Email = "senad.ljajic@email.com", Adresa = "Stevana Nemanje 42, Novi Pazar" };
+        var pat4 = new Patient { Ime = "Merima", Prezime = "Redžović", JMBG = "0812000735004", DatumRodjenja = new DateOnly(2000, 12, 8), Pol = "Ž", Telefon = "0634445566", Email = "merima.redzovic@email.com", Adresa = "1. maja 30, Novi Pazar" };
+        var pat5 = new Patient { Ime = "Hasan", Prezime = "Hodžić", JMBG = "3006995710005", DatumRodjenja = new DateOnly(1995, 6, 30), Pol = "M", Telefon = "0607778899", Email = "hasan.hodzic@email.com", Adresa = "Oslobodilačka 12, Novi Pazar", BrojOsiguranja = "123456789" };
         db.Patients.AddRange(pat1, pat2, pat3, pat4, pat5);
         await db.SaveChangesAsync();
 
@@ -220,17 +224,17 @@ public static class DbSeeder
 
         // Future appointments
         db.Appointments.AddRange(
-            new Appointment { PatientId = pat1.PatientId, DoctorId = drMarko.DoctorId, ServiceId = svcOpsti.ServiceId, OfficeId = office1.OfficeId, DatumVreme = nextMon, TrajanjeMinuta = 30, CreatorId = creatorId },
-            new Appointment { PatientId = pat2.PatientId, DoctorId = drMilica.DoctorId, ServiceId = svcKardio.ServiceId, OfficeId = office1.OfficeId, DatumVreme = nextMon.AddHours(1), TrajanjeMinuta = 45, CreatorId = creatorId },
-            new Appointment { PatientId = pat3.PatientId, DoctorId = drNikola.DoctorId, ServiceId = svcDerma.ServiceId, OfficeId = office2.OfficeId, DatumVreme = nextMon.AddDays(1).AddHours(1), TrajanjeMinuta = 30, CreatorId = creatorId },
-            new Appointment { PatientId = pat4.PatientId, DoctorId = drAna.DoctorId, ServiceId = svcOrtop.ServiceId, OfficeId = office3.OfficeId, DatumVreme = nextMon.AddDays(2), TrajanjeMinuta = 30, CreatorId = creatorId },
-            new Appointment { PatientId = pat5.PatientId, DoctorId = drPetar.DoctorId, ServiceId = svcNeuro.ServiceId, OfficeId = office4.OfficeId, DatumVreme = nextMon.AddDays(3), TrajanjeMinuta = 45, CreatorId = creatorId }
+            new Appointment { PatientId = pat1.PatientId, DoctorId = drAmir.DoctorId, ServiceId = svcOpsti.ServiceId, OfficeId = office1.OfficeId, DatumVreme = nextMon, TrajanjeMinuta = 30, CreatorId = creatorId },
+            new Appointment { PatientId = pat2.PatientId, DoctorId = drLejla.DoctorId, ServiceId = svcKardio.ServiceId, OfficeId = office1.OfficeId, DatumVreme = nextMon.AddHours(1), TrajanjeMinuta = 45, CreatorId = creatorId },
+            new Appointment { PatientId = pat3.PatientId, DoctorId = drHaris.DoctorId, ServiceId = svcDerma.ServiceId, OfficeId = office2.OfficeId, DatumVreme = nextMon.AddDays(1).AddHours(1), TrajanjeMinuta = 30, CreatorId = creatorId },
+            new Appointment { PatientId = pat4.PatientId, DoctorId = drAmra.DoctorId, ServiceId = svcOrtop.ServiceId, OfficeId = office3.OfficeId, DatumVreme = nextMon.AddDays(2), TrajanjeMinuta = 30, CreatorId = creatorId },
+            new Appointment { PatientId = pat5.PatientId, DoctorId = drAdnan.DoctorId, ServiceId = svcNeuro.ServiceId, OfficeId = office4.OfficeId, DatumVreme = nextMon.AddDays(3), TrajanjeMinuta = 45, CreatorId = creatorId }
         );
 
         // Past appointment (realized)
         db.Appointments.Add(new Appointment
         {
-            PatientId = pat1.PatientId, DoctorId = drMarko.DoctorId, ServiceId = svcOpsti.ServiceId,
+            PatientId = pat1.PatientId, DoctorId = drAmir.DoctorId, ServiceId = svcOpsti.ServiceId,
             OfficeId = office1.OfficeId, DatumVreme = now.AddDays(-7), TrajanjeMinuta = 30,
             Status = "realizovan", CreatorId = creatorId
         });
@@ -238,7 +242,7 @@ public static class DbSeeder
 
         // --- Waiting List Items ---
         db.WaitingListItems.AddRange(
-            new WaitingListItem { PatientId = pat2.PatientId, ServiceId = svcKardio.ServiceId, DoctorId = drMilica.DoctorId, Prioritet = 1, Napomena = "Hitno - bol u grudima" },
+            new WaitingListItem { PatientId = pat2.PatientId, ServiceId = svcKardio.ServiceId, DoctorId = drLejla.DoctorId, Prioritet = 1, Napomena = "Hitno - bol u grudima" },
             new WaitingListItem { PatientId = pat4.PatientId, ServiceId = svcDermoskop.ServiceId, Prioritet = 2, Napomena = "Kontrolni pregled mladeža" },
             new WaitingListItem { PatientId = pat5.PatientId, ServiceId = svcOrtop.ServiceId, Prioritet = 3 }
         );

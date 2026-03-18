@@ -7,6 +7,7 @@ import { ToastService } from '../../shared/services/toast.service';
 import { PatientDetail, Allergy, PatientHistory } from './patient.model';
 import { AllergyDialogComponent, AllergyDialogData } from './allergy-dialog.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
+import { PatientDialogComponent } from './patient-dialog.component';
 
 @Component({
   selector: 'app-patient-detail',
@@ -34,6 +35,9 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
         @if (patient()!.jePenzioner) {
           <span class="badge badge-warning">Penzioner</span>
         }
+        <button class="btn btn-ghost btn-sm btn-square ml-auto" (click)="editPatient()">
+          <span class="material-icons">edit</span>
+        </button>
       </div>
 
       <div role="tablist" class="tabs tabs-bordered mb-4">
@@ -212,6 +216,14 @@ export class PatientDetailComponent implements OnInit {
       case 'Životno ugrožavajuća': return 'badge-error';
       default: return '';
     }
+  }
+
+  editPatient(): void {
+    const p = this.patient()!;
+    const ref = this.dialogService.open(PatientDialogComponent, p);
+    ref.afterClosed.subscribe(result => {
+      if (result) this.loadPatient(p.patientId);
+    });
   }
 
   openAllergyDialog(allergy?: Allergy): void {

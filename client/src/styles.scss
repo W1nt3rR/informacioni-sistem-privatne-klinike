@@ -4,3 +4,24 @@
 }
 
 html, body { height: 100%; margin: 0; }
+
+@media print {
+  aside, header.navbar {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .flex.h-screen {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .flex-col.flex-1 {
+    overflow: visible !important;
+  }
+  .btn {
+    display: none !important;
+  }
+}

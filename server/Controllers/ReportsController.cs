@@ -7,10 +7,88 @@ namespace PrivateClinic.API.Controllers;
 
 [ApiController]
 [Route("api/reports")]
-[Authorize(Roles = "admin,menadzer")]
+[Authorize(Roles = "admin,menadzer,recepcija,lekar")]
 public class ReportsController(AppDbContext db) : ControllerBase
 {
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> Dashboard()
+    {
+        var today = DateTime.Today;
+        var tomorrow = today.AddDays(1);
+
+        var patientCount = await db.Patients.CountAsync(p => p.Aktivan);
+        var doctorCount = await db.Doctors.CountAsync(d => d.Aktivan);
+
+        var todayAppointments = await db.Appointments
+            .Where(a => a.DatumVreme >= today && a.DatumVreme < tomorrow)
+            .CountAsync();
+
+        var unpaidInvoices = await db.Invoices
+            .Where(i => i.StatusNaplate == "neplaceno" || i.StatusNaplate == "delimicno")
+            .CountAsync();
+
+        var waitingListCount = await db.WaitingListItems
+            .CountAsync(w => w.Status == "ceka");
+
+        var todayRevenue = await db.Payments
+            .Where(p => p.DatumPlacanja >= today && p.DatumPlacanja < tomorrow)
+            .SumAsync(p => (decimal?)p.Iznos) ?? 0;
+
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+        var monthRevenue = await db.Payments
+            .Where(p => p.DatumPlacanja >= monthStart && p.DatumPlacanja < tomorrow)
+            .SumAsync(p => (decimal?)p.Iznos) ?? 0;
+
+        var upcomingAppointments = await db.Appointments
+            .Where(a => a.DatumVreme >= today && a.DatumVreme < tomorrow && a.Status == "zakazan")
+            .Include(a => a.Patient)
+            .Include(a => a.Doctor).ThenInclude(d => d.User)
+            .Include(a => a.Service)
+            .OrderBy(a => a.DatumVreme)
+            .Take(10)
+            .Select(a => new
+            {
+                a.AppointmentId,
+                Pacijent = a.Patient.Ime + " " + a.Patient.Prezime,
+                Lekar = a.Doctor.User.Ime + " " + a.Doctor.User.Prezime,
+                Usluga = a.Service.Naziv,
+                a.DatumVreme,
+                a.Status
+            })
+            .ToListAsync();
+
+        var recentInvoices = await db.Invoices
+            .Where(i => i.StatusNaplate == "neplaceno" || i.StatusNaplate == "delimicno")
+            .Include(i => i.Patient)
+            .OrderByDescending(i => i.DatumIzdavanja)
+            .Take(5)
+            .Select(i => new
+            {
+                i.InvoiceId,
+                i.BrojRacuna,
+                Pacijent = i.Patient.Ime + " " + i.Patient.Prezime,
+                i.IznosZaNaplatu,
+                i.StatusNaplate,
+                i.DatumIzdavanja
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            patientCount,
+            doctorCount,
+            todayAppointments,
+            unpaidInvoices,
+            waitingListCount,
+            todayRevenue,
+            monthRevenue,
+            upcomingAppointments,
+            recentInvoices
+        });
+    }
+
     [HttpGet("examinations")]
+    [Authorize(Roles = "admin,menadzer")]
     public async Task<IActionResult> ExaminationReport(
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
