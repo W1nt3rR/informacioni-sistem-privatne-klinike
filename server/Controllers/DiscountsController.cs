@@ -66,16 +66,16 @@ public class DiscountsController(AppDbContext db) : ControllerBase
         var entity = await db.Discounts.FindAsync(id);
         if (entity == null) return NotFound();
 
-        // System discounts: only allow changing Naziv, Procenat, and Aktivan
-        entity.Naziv = request.Naziv;
-        entity.Procenat = request.Procenat;
-        entity.Aktivan = request.Aktivan;
-
+        // System discounts: only allow changing Procenat and Aktivan (not Naziv)
         if (!entity.JeSistemski)
         {
+            entity.Naziv = request.Naziv;
             entity.VaziOd = request.VaziOd;
             entity.VaziDo = request.VaziDo;
         }
+
+        entity.Procenat = request.Procenat;
+        entity.Aktivan = request.Aktivan;
 
         await db.SaveChangesAsync();
         return NoContent();

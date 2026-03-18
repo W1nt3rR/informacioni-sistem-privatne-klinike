@@ -10,7 +10,7 @@ namespace PrivateClinic.API.Controllers;
 
 [ApiController]
 [Route("api/waiting-list")]
-[Authorize]
+[Authorize(Roles = "admin,recepcija")]
 public class WaitingListController(AppDbContext db) : ControllerBase
 {
     [HttpGet]

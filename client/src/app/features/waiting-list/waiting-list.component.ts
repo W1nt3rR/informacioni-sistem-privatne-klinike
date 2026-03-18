@@ -83,26 +83,26 @@ interface WaitingListItem {
                         <div class="tooltip" data-tip="Zakaži termin">
                           <button class="btn btn-ghost btn-xs btn-square text-success"
                                   (click)="convertToAppointment(w)">
-                            <span class="material-icons">calendar_month</span>
+                            <span class="material-icons text-sm">calendar_month</span>
                           </button>
                         </div>
                         <div class="tooltip" data-tip="Označi kao zakazan">
                           <button class="btn btn-ghost btn-xs btn-square text-primary"
                                   (click)="updateStatus(w.waitingListItemId, 'zakazan')">
-                            <span class="material-icons">event_available</span>
+                            <span class="material-icons text-sm">event_available</span>
                           </button>
                         </div>
                         <div class="tooltip" data-tip="Označi kao istekao">
                           <button class="btn btn-ghost btn-xs btn-square text-error"
                                   (click)="updateStatus(w.waitingListItemId, 'istekao')">
-                            <span class="material-icons">event_busy</span>
+                            <span class="material-icons text-sm">event_busy</span>
                           </button>
                         </div>
                       }
                       <div class="tooltip" data-tip="Ukloni sa liste">
                         <button class="btn btn-ghost btn-xs btn-square text-error"
                                 (click)="remove(w.waitingListItemId)">
-                          <span class="material-icons">delete</span>
+                          <span class="material-icons text-sm">delete</span>
                         </button>
                       </div>
                     </div>

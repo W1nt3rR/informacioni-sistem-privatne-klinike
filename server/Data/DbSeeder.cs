@@ -192,8 +192,8 @@ public static class DbSeeder
         // --- Patients ---
         var pat1 = new Patient { Ime = "Edin", Prezime = "Mujović", JMBG = "0101990710001", DatumRodjenja = new DateOnly(1990, 1, 1), Pol = "M", Telefon = "0641234567", Email = "edin.mujovic@email.com", Adresa = "28. Novembra 15, Novi Pazar" };
         var pat2 = new Patient { Ime = "Azra", Prezime = "Kolašinac", JMBG = "1505985735002", DatumRodjenja = new DateOnly(1985, 5, 15), Pol = "Ž", Telefon = "0659876543", Email = "azra.kolasinac@email.com", Adresa = "Rifata Burdževića 8, Novi Pazar" };
-        var pat3 = new Patient { Ime = "Senad", Prezime = "Ljajić", JMBG = "2003978710003", DatumRodjenja = new DateOnly(1978, 3, 20), Pol = "M", Telefon = "0621112233", Email = "senad.ljajic@email.com", Adresa = "Stevana Nemanje 42, Novi Pazar" };
-        var pat4 = new Patient { Ime = "Merima", Prezime = "Redžović", JMBG = "0812000735004", DatumRodjenja = new DateOnly(2000, 12, 8), Pol = "Ž", Telefon = "0634445566", Email = "merima.redzovic@email.com", Adresa = "1. maja 30, Novi Pazar" };
+        var pat3 = new Patient { Ime = "Senad", Prezime = "Ljajić", JMBG = "2003978710003", DatumRodjenja = new DateOnly(1978, 3, 20), Pol = "M", Telefon = "0621112233", Email = "senad.ljajic@email.com", Adresa = "Stevana Nemanje 42, Novi Pazar", JePenzioner = true };
+        var pat4 = new Patient { Ime = "Merima", Prezime = "Redžović", JMBG = "0812000735004", DatumRodjenja = new DateOnly(2000, 12, 8), Pol = "Ž", Telefon = "0634445566", Email = "merima.redzovic@email.com", Adresa = "1. maja 30, Novi Pazar", JeStudent = true };
         var pat5 = new Patient { Ime = "Hasan", Prezime = "Hodžić", JMBG = "3006995710005", DatumRodjenja = new DateOnly(1995, 6, 30), Pol = "M", Telefon = "0607778899", Email = "hasan.hodzic@email.com", Adresa = "Oslobodilačka 12, Novi Pazar", BrojOsiguranja = "123456789" };
         db.Patients.AddRange(pat1, pat2, pat3, pat4, pat5);
         await db.SaveChangesAsync();
@@ -256,6 +256,55 @@ public static class DbSeeder
             new WaitingListItem { PatientId = pat4.PatientId, ServiceId = svcDermoskop.ServiceId, Prioritet = 2, Napomena = "Kontrolni pregled mladeža" },
             new WaitingListItem { PatientId = pat5.PatientId, ServiceId = svcOrtop.ServiceId, Prioritet = 3 }
         );
+        await db.SaveChangesAsync();
+
+        // --- Invoices with discounts ---
+        var studentDiscount = await db.Discounts.FirstAsync(d => d.Tip == "student");
+        var pensionerDiscount = await db.Discounts.FirstAsync(d => d.Tip == "penzioner");
+        var paket2Discount = await db.Discounts.FirstAsync(d => d.Tip == "paket2");
+
+        // Invoice 1: Student patient (Merima) – 2 items → student + paket2
+        var inv1Total = svcDerma.Cena + svcDermoskop.Cena; // 4000 + 3500 = 7500
+        var inv1DiscountPct = studentDiscount.Procenat + paket2Discount.Procenat; // 15 + 5 = 20%
+        var inv1 = new Invoice
+        {
+            PatientId = pat4.PatientId, BrojRacuna = "RN-20260315-001",
+            DatumIzdavanja = now.AddDays(-3), UkupanIznos = inv1Total,
+            PopustProcenat = inv1DiscountPct, IznosZaNaplatu = inv1Total * (1 - inv1DiscountPct / 100),
+            StatusNaplate = "neplaceno"
+        };
+        inv1.Items.Add(new InvoiceItem { ServiceId = svcDerma.ServiceId, JedinicnaCena = svcDerma.Cena, Kolicina = 1, Iznos = svcDerma.Cena });
+        inv1.Items.Add(new InvoiceItem { ServiceId = svcDermoskop.ServiceId, JedinicnaCena = svcDermoskop.Cena, Kolicina = 1, Iznos = svcDermoskop.Cena });
+        inv1.InvoiceDiscounts.Add(new InvoiceDiscount { DiscountId = studentDiscount.DiscountId, Procenat = studentDiscount.Procenat });
+        inv1.InvoiceDiscounts.Add(new InvoiceDiscount { DiscountId = paket2Discount.DiscountId, Procenat = paket2Discount.Procenat });
+        db.Invoices.Add(inv1);
+
+        // Invoice 2: Pensioner patient (Senad) – 1 item → penzioner popust
+        var inv2Total = svcOrtop.Cena; // 4500
+        var inv2 = new Invoice
+        {
+            PatientId = pat3.PatientId, BrojRacuna = "RN-20260316-001",
+            DatumIzdavanja = now.AddDays(-2), UkupanIznos = inv2Total,
+            PopustProcenat = pensionerDiscount.Procenat, IznosZaNaplatu = inv2Total * (1 - pensionerDiscount.Procenat / 100),
+            StatusNaplate = "placeno"
+        };
+        inv2.Items.Add(new InvoiceItem { ServiceId = svcOrtop.ServiceId, JedinicnaCena = svcOrtop.Cena, Kolicina = 1, Iznos = svcOrtop.Cena });
+        inv2.InvoiceDiscounts.Add(new InvoiceDiscount { DiscountId = pensionerDiscount.DiscountId, Procenat = pensionerDiscount.Procenat });
+        inv2.Payments.Add(new Payment { Iznos = inv2Total * (1 - pensionerDiscount.Procenat / 100), NacinPlacanja = "gotovina", DatumPlacanja = now.AddDays(-2) });
+        db.Invoices.Add(inv2);
+
+        // Invoice 3: Regular patient (Edin) – no discounts
+        var inv3Total = svcOpsti.Cena; // 3000
+        var inv3 = new Invoice
+        {
+            PatientId = pat1.PatientId, BrojRacuna = "RN-20260317-001",
+            DatumIzdavanja = now.AddDays(-1), UkupanIznos = inv3Total,
+            PopustProcenat = 0, IznosZaNaplatu = inv3Total,
+            StatusNaplate = "neplaceno"
+        };
+        inv3.Items.Add(new InvoiceItem { ServiceId = svcOpsti.ServiceId, JedinicnaCena = svcOpsti.Cena, Kolicina = 1, Iznos = svcOpsti.Cena });
+        db.Invoices.Add(inv3);
+
         await db.SaveChangesAsync();
     }
 }

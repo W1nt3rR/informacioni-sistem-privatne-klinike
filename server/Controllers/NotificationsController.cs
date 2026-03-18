@@ -9,7 +9,7 @@ namespace PrivateClinic.API.Controllers;
 
 [ApiController]
 [Route("api/notifications")]
-[Authorize]
+[Authorize(Roles = "admin,recepcija")]
 public class NotificationsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
@@ -87,7 +87,7 @@ public class NotificationsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "admin,recepcija")]
     public async Task<IActionResult> GenerateReminders()
     {
-        var tomorrow = DateTime.UtcNow.Date.AddDays(1);
+        var tomorrow = DateTime.Now.Date.AddDays(1);
         var dayAfter = tomorrow.AddDays(1);
 
         var appointments = await db.Appointments

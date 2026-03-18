@@ -9,7 +9,7 @@ namespace PrivateClinic.API.Controllers;
 
 [ApiController]
 [Route("api/examinations/{examinationId}/referrals")]
-[Authorize]
+[Authorize(Roles = "admin,lekar")]
 public class ReferralsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]

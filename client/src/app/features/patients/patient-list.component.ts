@@ -60,12 +60,18 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
                     </span>
                   </td>
                   <td>
-                    <button class="btn btn-ghost btn-xs btn-square" (click)="openDialog(row)">
-                      <span class="material-icons text-base">edit</span>
-                    </button>
-                    <button class="btn btn-ghost btn-xs btn-square" (click)="toggleStatus(row)">
-                      <span class="material-icons text-base">{{ row.aktivan ? 'person_off' : 'person' }}</span>
-                    </button>
+                    <div class="flex gap-1">
+                      <div class="tooltip" data-tip="Izmeni">
+                        <button class="btn btn-ghost btn-xs btn-square" (click)="openDialog(row)">
+                          <span class="material-icons text-sm">edit</span>
+                        </button>
+                      </div>
+                      <div class="tooltip" [attr.data-tip]="row.aktivan ? 'Deaktiviraj' : 'Aktiviraj'">
+                        <button class="btn btn-ghost btn-xs btn-square" (click)="toggleStatus(row)">
+                          <span class="material-icons text-sm">{{ row.aktivan ? 'person_off' : 'person' }}</span>
+                        </button>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               }

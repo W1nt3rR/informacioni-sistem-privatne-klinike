@@ -41,15 +41,17 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
                 <td>{{ row.naziv }}</td>
                 <td>{{ row.opis ?? '—' }}</td>
                 <td>
-                  <div class="tooltip" data-tip="Izmeni">
-                    <button class="btn btn-ghost btn-xs btn-square" (click)="openDialog(row)">
-                      <span class="material-icons">edit</span>
-                    </button>
-                  </div>
-                  <div class="tooltip" data-tip="Obriši">
-                    <button class="btn btn-ghost btn-xs btn-square text-error" (click)="deleteItem(row)">
-                      <span class="material-icons">delete</span>
-                    </button>
+                  <div class="flex gap-1">
+                    <div class="tooltip" data-tip="Izmeni">
+                      <button class="btn btn-ghost btn-xs btn-square" (click)="openDialog(row)">
+                        <span class="material-icons text-sm">edit</span>
+                      </button>
+                    </div>
+                    <div class="tooltip" data-tip="Obriši">
+                      <button class="btn btn-ghost btn-xs btn-square text-error" (click)="deleteItem(row)">
+                        <span class="material-icons text-sm">delete</span>
+                      </button>
+                    </div>
                   </div>
                 </td>
               </tr>

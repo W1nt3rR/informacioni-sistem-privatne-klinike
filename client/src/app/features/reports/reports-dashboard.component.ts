@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../shared/services/api.service';
@@ -218,7 +218,7 @@ import { ApiService } from '../../shared/services/api.service';
       }
   `
 })
-export class ReportsDashboardComponent {
+export class ReportsDashboardComponent implements OnInit {
   private api = inject(ApiService);
 
   tabLabels = ['Pregledi', 'Prihodi', 'Otkazivanja', 'Iskorišćenost', 'Popularne usluge'];
@@ -233,6 +233,10 @@ export class ReportsDashboardComponent {
   utilReport = signal<any>(null);
   popularReport = signal<any>(null);
   maxAppointments = signal(0);
+
+  ngOnInit(): void {
+    this.loadAll();
+  }
 
   loadAll() {
     const params = `from=${this.fromDate}&to=${this.toDate}`;

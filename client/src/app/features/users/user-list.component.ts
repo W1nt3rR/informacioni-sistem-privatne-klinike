@@ -70,15 +70,17 @@ interface UserItem {
                 </span>
               </td>
               <td>
-                <div class="tooltip" data-tip="Izmeni">
-                  <button class="btn btn-ghost btn-xs btn-square" (click)="openDialog(u)">
-                    <span class="material-icons text-sm">edit</span>
-                  </button>
-                </div>
-                <div class="tooltip" [attr.data-tip]="u.aktivan ? 'Deaktiviraj' : 'Aktiviraj'">
-                  <button class="btn btn-ghost btn-xs btn-square" (click)="toggleActive(u)">
-                    <span class="material-icons text-sm">{{ u.aktivan ? 'person_off' : 'person' }}</span>
-                  </button>
+                <div class="flex gap-1">
+                  <div class="tooltip" data-tip="Izmeni">
+                    <button class="btn btn-ghost btn-xs btn-square" (click)="openDialog(u)">
+                      <span class="material-icons text-sm">edit</span>
+                    </button>
+                  </div>
+                  <div class="tooltip" [attr.data-tip]="u.aktivan ? 'Deaktiviraj' : 'Aktiviraj'">
+                    <button class="btn btn-ghost btn-xs btn-square" (click)="toggleActive(u)">
+                      <span class="material-icons text-sm">{{ u.aktivan ? 'person_off' : 'person' }}</span>
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>

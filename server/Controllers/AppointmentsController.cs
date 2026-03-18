@@ -10,7 +10,7 @@ namespace PrivateClinic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "admin,recepcija,lekar")]
 public class AppointmentsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]

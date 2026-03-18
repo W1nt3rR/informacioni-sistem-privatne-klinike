@@ -17,6 +17,7 @@ public class PortalController(
 {
     // ─── Self-registration ───────────────────────────────────────────
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] PortalRegisterRequest req)
     {
         if (await userManager.FindByNameAsync(req.UserName) is not null)
@@ -34,7 +35,9 @@ public class PortalController(
         if (!result.Succeeded)
             return BadRequest(new { message = string.Join("; ", result.Errors.Select(e => e.Description)) });
 
-        await userManager.AddToRoleAsync(user, "pacijent");
+        var roleResult = await userManager.AddToRoleAsync(user, "pacijent");
+        if (!roleResult.Succeeded)
+            return BadRequest(new { message = "Greška pri dodeli uloge." });
 
         // Link to existing patient by JMBG or create new
         var patient = await db.Patients.FirstOrDefaultAsync(p => p.JMBG == req.JMBG);

@@ -12,7 +12,7 @@ namespace PrivateClinic.API.Controllers;
 
 [ApiController]
 [Route("api/medical-reports")]
-[Authorize]
+[Authorize(Roles = "admin,lekar")]
 public class MedicalReportsController(AppDbContext db) : ControllerBase
 {
     [HttpPost]

@@ -104,9 +104,11 @@ interface AppointmentForExam {
                     </td>
                     <td><span class="badge" [class]="statusBadge(e.status)">{{ statusLabel(e.status) }}</span></td>
                     <td>
-                      <a class="btn btn-ghost btn-sm btn-square" [routerLink]="['/examinations', e.examinationId]">
-                        <span class="material-icons">visibility</span>
-                      </a>
+                      <div class="tooltip" data-tip="Otvori">
+                        <a class="btn btn-ghost btn-xs btn-square" [routerLink]="['/examinations', e.examinationId]">
+                          <span class="material-icons text-sm">visibility</span>
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 }

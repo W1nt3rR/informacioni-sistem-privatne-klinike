@@ -73,14 +73,9 @@ import { CancelDialogComponent, CancelDialogData } from './cancel-dialog.compone
                   <td>
                     @if (row.status === 'zakazan') {
                       <div class="flex gap-1">
-                        <div class="tooltip" data-tip="Realizovan">
-                          <button class="btn btn-ghost btn-xs btn-square text-success" (click)="markRealized(row)">
-                            <span class="material-icons text-base">check_circle</span>
-                          </button>
-                        </div>
                         <div class="tooltip" data-tip="Otkaži">
                           <button class="btn btn-ghost btn-xs btn-square text-error" (click)="openCancelDialog(row)">
-                            <span class="material-icons text-base">cancel</span>
+                            <span class="material-icons text-sm">cancel</span>
                           </button>
                         </div>
                       </div>
@@ -188,14 +183,6 @@ export class AppointmentListComponent implements OnInit {
     ref.afterClosed.subscribe(result => {
       if (result) this.load();
     });
-  }
-
-  markRealized(row: CalendarAppointment): void {
-    this.api.patch(`appointments/${row.appointmentId}/status`, JSON.stringify('realizovan'))
-      .subscribe({
-        next: () => { this.toast.success('Termin realizovan'); this.load(); },
-        error: () => this.toast.error('Greška'),
-      });
   }
 
   openCancelDialog(row: CalendarAppointment): void {

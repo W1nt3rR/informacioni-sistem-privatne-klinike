@@ -69,7 +69,9 @@ import { CreateInvoiceDialogComponent } from './create-invoice-dialog.component'
               <th>Br. računa</th>
               <th>Pacijent</th>
               <th>Datum</th>
-              <th>Iznos</th>
+              <th>Ukupno</th>
+              <th>Popust</th>
+              <th>Za naplatu</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -80,15 +82,25 @@ import { CreateInvoiceDialogComponent } from './create-invoice-dialog.component'
                 <td>{{ r.brojRacuna }}</td>
                 <td>{{ r.patientIme }} {{ r.patientPrezime }}</td>
                 <td>{{ r.datumIzdavanja | date:'dd.MM.yyyy.' }}</td>
+                <td>{{ r.ukupanIznos | number:'1.2-2' }} RSD</td>
+                <td>
+                  @if (r.popustProcenat > 0) {
+                    <span class="badge badge-success badge-sm">{{ r.popustProcenat | number:'1.0-2' }}%</span>
+                  } @else {
+                    <span class="text-base-content/40">—</span>
+                  }
+                </td>
                 <td>{{ r.iznosZaNaplatu | number:'1.2-2' }} RSD</td>
                 <td><span class="badge" [ngClass]="statusBadge(r.statusNaplate)">
                   {{ r.statusNaplate === 'neplaceno' ? 'Neplaćeno' :
                      r.statusNaplate === 'delimicno' ? 'Delimično' : 'Plaćeno' }}
                 </span></td>
                 <td>
-                  <a class="btn btn-ghost btn-xs btn-square" [routerLink]="['/invoices', r.invoiceId]">
-                    <span class="material-icons">visibility</span>
-                  </a>
+                  <div class="tooltip" data-tip="Detalji">
+                    <a class="btn btn-ghost btn-xs btn-square" [routerLink]="['/invoices', r.invoiceId]">
+                      <span class="material-icons text-sm">visibility</span>
+                    </a>
+                  </div>
                 </td>
               </tr>
             }
