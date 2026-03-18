@@ -34,6 +34,8 @@ namespace PrivateClinic.API.Migrations
                     Prezime = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Aktivan = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     DatumKreiranja = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RefreshTokenExpiryTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -76,10 +78,13 @@ namespace PrivateClinic.API.Migrations
                     DiscountId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Naziv = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Tip = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "opsti"),
                     Procenat = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
                     VaziOd = table.Column<DateOnly>(type: "date", nullable: true),
                     VaziDo = table.Column<DateOnly>(type: "date", nullable: true),
-                    Aktivan = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
+                    Aktivan = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    JeSistemski = table.Column<bool>(type: "bit", nullable: false),
+                    Kod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -177,10 +182,10 @@ namespace PrivateClinic.API.Migrations
                 {
                     ActivityLogId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     Akcija = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                     Tabela = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    EntitetId = table.Column<int>(type: "int", nullable: true),
+                    EntitetId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     StareVrednosti = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     NoveVrednosti = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DatumVreme = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
@@ -194,7 +199,7 @@ namespace PrivateClinic.API.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -298,6 +303,8 @@ namespace PrivateClinic.API.Migrations
                     Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     BrojOsiguranja = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Napomene = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    JeStudent = table.Column<bool>(type: "bit", nullable: false),
+                    JePenzioner = table.Column<bool>(type: "bit", nullable: false),
                     DatumRegistracije = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     Aktivan = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
@@ -389,32 +396,6 @@ namespace PrivateClinic.API.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Invoices",
-                columns: table => new
-                {
-                    InvoiceId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PatientId = table.Column<int>(type: "int", nullable: false),
-                    BrojRacuna = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    DatumIzdavanja = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
-                    UkupanIznos = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
-                    PopustProcenat = table.Column<decimal>(type: "decimal(5,2)", nullable: false, defaultValue: 0m),
-                    IznosZaNaplatu = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
-                    StatusNaplate = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "neplaceno"),
-                    Napomena = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Invoices", x => x.InvoiceId);
-                    table.ForeignKey(
-                        name: "FK_Invoices_Patients_PatientId",
-                        column: x => x.PatientId,
-                        principalTable: "Patients",
-                        principalColumn: "PatientId",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "WorkingHours",
                 columns: table => new
                 {
@@ -451,7 +432,7 @@ namespace PrivateClinic.API.Migrations
                     Status = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false, defaultValue: "zakazan"),
                     RazlogPromene = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     RazlogOtkazivanja = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CreatorId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CreatorId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     DatumKreiranja = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
                 },
                 constraints: table =>
@@ -462,7 +443,7 @@ namespace PrivateClinic.API.Migrations
                         column: x => x.CreatorId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_Appointments_Doctors_DoctorId",
                         column: x => x.DoctorId,
@@ -551,29 +532,6 @@ namespace PrivateClinic.API.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Payments",
-                columns: table => new
-                {
-                    PaymentId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    InvoiceId = table.Column<int>(type: "int", nullable: false),
-                    Iznos = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
-                    NacinPlacanja = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    DatumPlacanja = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
-                    Napomena = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Payments", x => x.PaymentId);
-                    table.ForeignKey(
-                        name: "FK_Payments_Invoices_InvoiceId",
-                        column: x => x.InvoiceId,
-                        principalTable: "Invoices",
-                        principalColumn: "InvoiceId",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Examinations",
                 columns: table => new
                 {
@@ -621,6 +579,39 @@ namespace PrivateClinic.API.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Invoices",
+                columns: table => new
+                {
+                    InvoiceId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PatientId = table.Column<int>(type: "int", nullable: false),
+                    AppointmentId = table.Column<int>(type: "int", nullable: true),
+                    BrojRacuna = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    DatumIzdavanja = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    UkupanIznos = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
+                    PopustProcenat = table.Column<decimal>(type: "decimal(5,2)", nullable: false, defaultValue: 0m),
+                    IznosZaNaplatu = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
+                    StatusNaplate = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "neplaceno"),
+                    Napomena = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Invoices", x => x.InvoiceId);
+                    table.ForeignKey(
+                        name: "FK_Invoices_Appointments_AppointmentId",
+                        column: x => x.AppointmentId,
+                        principalTable: "Appointments",
+                        principalColumn: "AppointmentId",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Invoices_Patients_PatientId",
+                        column: x => x.PatientId,
+                        principalTable: "Patients",
+                        principalColumn: "PatientId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Notifications",
                 columns: table => new
                 {
@@ -643,43 +634,6 @@ namespace PrivateClinic.API.Migrations
                         principalTable: "Appointments",
                         principalColumn: "AppointmentId",
                         onDelete: ReferentialAction.SetNull);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "InvoiceItems",
-                columns: table => new
-                {
-                    InvoiceItemId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    InvoiceId = table.Column<int>(type: "int", nullable: false),
-                    ServiceId = table.Column<int>(type: "int", nullable: false),
-                    ExaminationId = table.Column<int>(type: "int", nullable: true),
-                    JedinicnaCena = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    Kolicina = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
-                    PopustProcenat = table.Column<decimal>(type: "decimal(5,2)", nullable: false, defaultValue: 0m),
-                    Iznos = table.Column<decimal>(type: "decimal(10,2)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_InvoiceItems", x => x.InvoiceItemId);
-                    table.ForeignKey(
-                        name: "FK_InvoiceItems_Examinations_ExaminationId",
-                        column: x => x.ExaminationId,
-                        principalTable: "Examinations",
-                        principalColumn: "ExaminationId",
-                        onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_InvoiceItems_Invoices_InvoiceId",
-                        column: x => x.InvoiceId,
-                        principalTable: "Invoices",
-                        principalColumn: "InvoiceId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_InvoiceItems_Services_ServiceId",
-                        column: x => x.ServiceId,
-                        principalTable: "Services",
-                        principalColumn: "ServiceId",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -762,6 +716,93 @@ namespace PrivateClinic.API.Migrations
                         principalTable: "Examinations",
                         principalColumn: "ExaminationId",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InvoiceDiscounts",
+                columns: table => new
+                {
+                    InvoiceDiscountId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    DiscountId = table.Column<int>(type: "int", nullable: false),
+                    Procenat = table.Column<decimal>(type: "decimal(5,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InvoiceDiscounts", x => x.InvoiceDiscountId);
+                    table.ForeignKey(
+                        name: "FK_InvoiceDiscounts_Discounts_DiscountId",
+                        column: x => x.DiscountId,
+                        principalTable: "Discounts",
+                        principalColumn: "DiscountId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_InvoiceDiscounts_Invoices_InvoiceId",
+                        column: x => x.InvoiceId,
+                        principalTable: "Invoices",
+                        principalColumn: "InvoiceId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InvoiceItems",
+                columns: table => new
+                {
+                    InvoiceItemId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    ServiceId = table.Column<int>(type: "int", nullable: false),
+                    ExaminationId = table.Column<int>(type: "int", nullable: true),
+                    JedinicnaCena = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    Kolicina = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
+                    PopustProcenat = table.Column<decimal>(type: "decimal(5,2)", nullable: false, defaultValue: 0m),
+                    Iznos = table.Column<decimal>(type: "decimal(10,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InvoiceItems", x => x.InvoiceItemId);
+                    table.ForeignKey(
+                        name: "FK_InvoiceItems_Examinations_ExaminationId",
+                        column: x => x.ExaminationId,
+                        principalTable: "Examinations",
+                        principalColumn: "ExaminationId",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_InvoiceItems_Invoices_InvoiceId",
+                        column: x => x.InvoiceId,
+                        principalTable: "Invoices",
+                        principalColumn: "InvoiceId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_InvoiceItems_Services_ServiceId",
+                        column: x => x.ServiceId,
+                        principalTable: "Services",
+                        principalColumn: "ServiceId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Payments",
+                columns: table => new
+                {
+                    PaymentId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    Iznos = table.Column<decimal>(type: "decimal(12,2)", nullable: false),
+                    NacinPlacanja = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    DatumPlacanja = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    Napomena = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Payments", x => x.PaymentId);
+                    table.ForeignKey(
+                        name: "FK_Payments_Invoices_InvoiceId",
+                        column: x => x.InvoiceId,
+                        principalTable: "Invoices",
+                        principalColumn: "InvoiceId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -860,6 +901,13 @@ namespace PrivateClinic.API.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Discounts_Kod",
+                table: "Discounts",
+                column: "Kod",
+                unique: true,
+                filter: "[Kod] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Doctors_LicencaBroj",
                 table: "Doctors",
                 column: "LicencaBroj",
@@ -908,6 +956,16 @@ namespace PrivateClinic.API.Migrations
                 column: "PatientId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_InvoiceDiscounts_DiscountId",
+                table: "InvoiceDiscounts",
+                column: "DiscountId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InvoiceDiscounts_InvoiceId",
+                table: "InvoiceDiscounts",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_InvoiceItems_ExaminationId",
                 table: "InvoiceItems",
                 column: "ExaminationId");
@@ -921,6 +979,13 @@ namespace PrivateClinic.API.Migrations
                 name: "IX_InvoiceItems_ServiceId",
                 table: "InvoiceItems",
                 column: "ServiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Invoices_AppointmentId",
+                table: "Invoices",
+                column: "AppointmentId",
+                unique: true,
+                filter: "[AppointmentId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Invoices_BrojRacuna",
@@ -1073,10 +1138,10 @@ namespace PrivateClinic.API.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "Discounts");
+                name: "DoctorServices");
 
             migrationBuilder.DropTable(
-                name: "DoctorServices");
+                name: "InvoiceDiscounts");
 
             migrationBuilder.DropTable(
                 name: "InvoiceItems");
@@ -1110,6 +1175,9 @@ namespace PrivateClinic.API.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "Discounts");
 
             migrationBuilder.DropTable(
                 name: "Invoices");

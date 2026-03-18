@@ -78,11 +78,21 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.c
           </table>
         </div>
 
+        <!-- Applied Discounts -->
+        @if (inv.appliedDiscounts.length) {
+          <h2 class="text-lg font-semibold mb-2">Primenjeni popusti</h2>
+          <div class="flex flex-wrap gap-2 mb-4">
+            @for (d of inv.appliedDiscounts; track d.naziv) {
+              <span class="badge badge-outline">{{ d.naziv }} — {{ d.procenat }}%</span>
+            }
+          </div>
+        }
+
         <!-- Totals -->
         <div class="text-right mb-6">
           <p>Ukupno: <strong>{{ inv.ukupanIznos | number:'1.2-2' }} RSD</strong></p>
           @if (inv.popustProcenat > 0) {
-            <p>Popust: {{ inv.popustProcenat }}%</p>
+            <p class="text-success">Popust: {{ inv.popustProcenat | number:'1.0-2' }}%</p>
           }
           <p class="text-lg">Za naplatu: <strong>{{ inv.iznosZaNaplatu | number:'1.2-2' }} RSD</strong></p>
           <p class="text-sm text-base-content/60">

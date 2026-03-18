@@ -15,6 +15,7 @@ export interface InvoiceListItem {
 export interface InvoiceDetail extends InvoiceListItem {
   items: InvoiceItem[];
   payments: PaymentItem[];
+  appliedDiscounts: InvoiceDiscountItem[];
 }
 
 export interface InvoiceItem {
@@ -28,6 +29,12 @@ export interface InvoiceItem {
   iznos: number;
 }
 
+export interface InvoiceDiscountItem {
+  naziv: string;
+  tip: string;
+  procenat: number;
+}
+
 export interface PaymentItem {
   paymentId: number;
   iznos: number;
@@ -38,15 +45,28 @@ export interface PaymentItem {
 
 export interface CreateInvoiceRequest {
   patientId: number;
-  popustProcenat: number;
   napomena?: string;
   items: CreateInvoiceItemRequest[];
+  kodPopusta?: string;
 }
 
 export interface CreateInvoiceItemRequest {
   serviceId: number;
   examinationId?: number;
   kolicina: number;
+}
+
+export interface InvoicePreviewRequest {
+  patientId: number;
+  items: CreateInvoiceItemRequest[];
+  kodPopusta?: string;
+}
+
+export interface InvoicePreviewResponse {
+  ukupanIznos: number;
+  popustProcenat: number;
+  iznosZaNaplatu: number;
+  appliedDiscounts: InvoiceDiscountItem[];
 }
 
 export interface CreatePaymentRequest {

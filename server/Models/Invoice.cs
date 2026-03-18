@@ -18,4 +18,5 @@ public class Invoice
     public Appointment? Appointment { get; set; }
     public ICollection<InvoiceItem> Items { get; set; } = [];
     public ICollection<Payment> Payments { get; set; } = [];
+    public ICollection<InvoiceDiscount> InvoiceDiscounts { get; set; } = [];
 }

@@ -206,13 +206,23 @@ public static class DbSeeder
         );
         await db.SaveChangesAsync();
 
-        // --- Discounts ---
-        db.Discounts.AddRange(
-            new Discount { Naziv = "Penzionerski popust", Procenat = 10m, Aktivan = true },
-            new Discount { Naziv = "Popust za studente", Procenat = 15m, Aktivan = true },
-            new Discount { Naziv = "Paket pregled 3+", Procenat = 5m, Aktivan = true }
-        );
-        await db.SaveChangesAsync();
+        // --- Discounts (system discounts – cannot be deleted) ---
+        if (!await db.Discounts.AnyAsync(d => d.JeSistemski))
+        {
+            db.Discounts.AddRange(
+                new Discount { Naziv = "Popust za studente", Tip = "student", Procenat = 15m, Aktivan = true, JeSistemski = true },
+                new Discount { Naziv = "Penzionerski popust", Tip = "penzioner", Procenat = 10m, Aktivan = true, JeSistemski = true },
+                new Discount { Naziv = "Paket 2 stavke", Tip = "paket2", Procenat = 5m, Aktivan = true, JeSistemski = true },
+                new Discount { Naziv = "Paket 3+ stavke", Tip = "paket3", Procenat = 10m, Aktivan = true, JeSistemski = true },
+                new Discount { Naziv = "Opšti popust", Tip = "opsti", Procenat = 0m, Aktivan = true, JeSistemski = true }
+            );
+            await db.SaveChangesAsync();
+        }
+        if (!await db.Discounts.AnyAsync(d => d.Kod == "KLINIKA10"))
+        {
+            db.Discounts.Add(new Discount { Naziv = "Promo kod KLINIKA10", Tip = "kod", Procenat = 10m, Aktivan = true, JeSistemski = false, Kod = "KLINIKA10" });
+            await db.SaveChangesAsync();
+        }
 
         // --- Appointments (future and past) ---
         var now = DateTime.UtcNow;

@@ -12,8 +12,8 @@ using PrivateClinic.API.Data;
 namespace PrivateClinic.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260317181001_AddPatientFlagsAndDiscountTip")]
-    partial class AddPatientFlagsAndDiscountTip
+    [Migration("20260318013131_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -195,7 +195,6 @@ namespace PrivateClinic.API.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("ActivityLogId");
@@ -339,7 +338,6 @@ namespace PrivateClinic.API.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AppointmentId"));
 
                     b.Property<string>("CreatorId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("DatumKreiranja")
@@ -442,6 +440,13 @@ namespace PrivateClinic.API.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("JeSistemski")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Kod")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Naziv")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -452,7 +457,10 @@ namespace PrivateClinic.API.Migrations
 
                     b.Property<string>("Tip")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("opsti");
 
                     b.Property<DateOnly?>("VaziDo")
                         .HasColumnType("date");
@@ -461,6 +469,10 @@ namespace PrivateClinic.API.Migrations
                         .HasColumnType("date");
 
                     b.HasKey("DiscountId");
+
+                    b.HasIndex("Kod")
+                        .IsUnique()
+                        .HasFilter("[Kod] IS NOT NULL");
 
                     b.ToTable("Discounts");
                 });
@@ -645,6 +657,32 @@ namespace PrivateClinic.API.Migrations
                     b.HasIndex("StatusNaplate");
 
                     b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("PrivateClinic.API.Models.InvoiceDiscount", b =>
+                {
+                    b.Property<int>("InvoiceDiscountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InvoiceDiscountId"));
+
+                    b.Property<int>("DiscountId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Procenat")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("InvoiceDiscountId");
+
+                    b.HasIndex("DiscountId");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceDiscounts");
                 });
 
             modelBuilder.Entity("PrivateClinic.API.Models.InvoiceItem", b =>
@@ -1280,8 +1318,7 @@ namespace PrivateClinic.API.Migrations
                     b.HasOne("PrivateClinic.API.Models.ApplicationUser", "User")
                         .WithMany("ActivityLogs")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("User");
                 });
@@ -1302,8 +1339,7 @@ namespace PrivateClinic.API.Migrations
                     b.HasOne("PrivateClinic.API.Models.ApplicationUser", "Creator")
                         .WithMany("CreatedAppointments")
                         .HasForeignKey("CreatorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("PrivateClinic.API.Models.Doctor", "Doctor")
                         .WithMany("Appointments")
@@ -1428,6 +1464,25 @@ namespace PrivateClinic.API.Migrations
                     b.Navigation("Appointment");
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("PrivateClinic.API.Models.InvoiceDiscount", b =>
+                {
+                    b.HasOne("PrivateClinic.API.Models.Discount", "Discount")
+                        .WithMany("InvoiceDiscounts")
+                        .HasForeignKey("DiscountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrivateClinic.API.Models.Invoice", "Invoice")
+                        .WithMany("InvoiceDiscounts")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Discount");
+
+                    b.Navigation("Invoice");
                 });
 
             modelBuilder.Entity("PrivateClinic.API.Models.InvoiceItem", b =>
@@ -1606,6 +1661,11 @@ namespace PrivateClinic.API.Migrations
                     b.Navigation("Examinations");
                 });
 
+            modelBuilder.Entity("PrivateClinic.API.Models.Discount", b =>
+                {
+                    b.Navigation("InvoiceDiscounts");
+                });
+
             modelBuilder.Entity("PrivateClinic.API.Models.Doctor", b =>
                 {
                     b.Navigation("Appointments");
@@ -1632,6 +1692,8 @@ namespace PrivateClinic.API.Migrations
 
             modelBuilder.Entity("PrivateClinic.API.Models.Invoice", b =>
                 {
+                    b.Navigation("InvoiceDiscounts");
+
                     b.Navigation("Items");
 
                     b.Navigation("Payments");

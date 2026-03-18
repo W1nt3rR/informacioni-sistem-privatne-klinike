@@ -16,8 +16,8 @@ public class DiscountsController(AppDbContext db) : ControllerBase
     public async Task<ActionResult<List<DiscountResponse>>> GetAll()
     {
         var list = await db.Discounts
-            .OrderBy(d => d.Naziv)
-            .Select(d => new DiscountResponse(d.DiscountId, d.Naziv, d.Tip, d.Procenat, d.VaziOd, d.VaziDo, d.Aktivan))
+            .OrderBy(d => d.JeSistemski ? 0 : 1).ThenBy(d => d.Naziv)
+            .Select(d => new DiscountResponse(d.DiscountId, d.Naziv, d.Tip, d.Procenat, d.VaziOd, d.VaziDo, d.Aktivan, d.JeSistemski, d.Kod))
             .ToListAsync();
         return Ok(list);
     }
@@ -27,26 +27,36 @@ public class DiscountsController(AppDbContext db) : ControllerBase
     {
         var d = await db.Discounts.FindAsync(id);
         if (d == null) return NotFound();
-        return Ok(new DiscountResponse(d.DiscountId, d.Naziv, d.Tip, d.Procenat, d.VaziOd, d.VaziDo, d.Aktivan));
+        return Ok(new DiscountResponse(d.DiscountId, d.Naziv, d.Tip, d.Procenat, d.VaziOd, d.VaziDo, d.Aktivan, d.JeSistemski, d.Kod));
     }
 
+    /// <summary>Creates a discount code (tip=kod). System discounts are seeded, not created via API.</summary>
     [HttpPost]
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<DiscountResponse>> Create(CreateDiscountRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.Kod))
+            return BadRequest("Kod popusta je obavezan.");
+
+        var codeUpper = request.Kod.Trim().ToUpperInvariant();
+        if (await db.Discounts.AnyAsync(d => d.Kod == codeUpper))
+            return BadRequest("Kod popusta već postoji.");
+
         var entity = new Discount
         {
             Naziv = request.Naziv,
-            Tip = request.Tip,
+            Tip = "kod",
             Procenat = request.Procenat,
             VaziOd = request.VaziOd,
             VaziDo = request.VaziDo,
             Aktivan = request.Aktivan,
+            JeSistemski = false,
+            Kod = codeUpper,
         };
         db.Discounts.Add(entity);
         await db.SaveChangesAsync();
-        var response = new DiscountResponse(entity.DiscountId, entity.Naziv, entity.Tip, entity.Procenat, entity.VaziOd, entity.VaziDo, entity.Aktivan);
-        return CreatedAtAction(nameof(GetById), new { id = entity.DiscountId }, response);
+        return CreatedAtAction(nameof(GetById), new { id = entity.DiscountId },
+            new DiscountResponse(entity.DiscountId, entity.Naziv, entity.Tip, entity.Procenat, entity.VaziOd, entity.VaziDo, entity.Aktivan, entity.JeSistemski, entity.Kod));
     }
 
     [HttpPut("{id}")]
@@ -55,12 +65,18 @@ public class DiscountsController(AppDbContext db) : ControllerBase
     {
         var entity = await db.Discounts.FindAsync(id);
         if (entity == null) return NotFound();
+
+        // System discounts: only allow changing Naziv, Procenat, and Aktivan
         entity.Naziv = request.Naziv;
-        entity.Tip = request.Tip;
         entity.Procenat = request.Procenat;
-        entity.VaziOd = request.VaziOd;
-        entity.VaziDo = request.VaziDo;
         entity.Aktivan = request.Aktivan;
+
+        if (!entity.JeSistemski)
+        {
+            entity.VaziOd = request.VaziOd;
+            entity.VaziDo = request.VaziDo;
+        }
+
         await db.SaveChangesAsync();
         return NoContent();
     }
@@ -71,8 +87,32 @@ public class DiscountsController(AppDbContext db) : ControllerBase
     {
         var entity = await db.Discounts.FindAsync(id);
         if (entity == null) return NotFound();
+        if (entity.JeSistemski)
+            return BadRequest("Sistemski popusti se ne mogu obrisati.");
         db.Discounts.Remove(entity);
         await db.SaveChangesAsync();
         return NoContent();
+    }
+
+    /// <summary>Validates a discount code and returns its details if valid.</summary>
+    [HttpPost("validate-code")]
+    public async Task<ActionResult<ValidateCodeResponse>> ValidateCode(ValidateCodeRequest request)
+    {
+        var codeUpper = request.Kod?.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(codeUpper))
+            return Ok(new ValidateCodeResponse(false, null, null, null));
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var discount = await db.Discounts.FirstOrDefaultAsync(d =>
+            d.Kod == codeUpper &&
+            d.Tip == "kod" &&
+            d.Aktivan &&
+            (d.VaziOd == null || d.VaziOd <= today) &&
+            (d.VaziDo == null || d.VaziDo >= today));
+
+        if (discount == null)
+            return Ok(new ValidateCodeResponse(false, null, null, null));
+
+        return Ok(new ValidateCodeResponse(true, discount.DiscountId, discount.Naziv, discount.Procenat));
     }
 }

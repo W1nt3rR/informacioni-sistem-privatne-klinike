@@ -12,7 +12,7 @@ public class Appointment
     public string Status { get; set; } = "zakazan"; // zakazan, realizovan, otkazao_pacijent, otkazala_klinika, nije_se_pojavio
     public string? RazlogPromene { get; set; }
     public string? RazlogOtkazivanja { get; set; }
-    public string CreatorId { get; set; } = string.Empty;
+    public string? CreatorId { get; set; }
     public DateTime DatumKreiranja { get; set; } = DateTime.UtcNow;
 
     // Navigation
@@ -20,7 +20,7 @@ public class Appointment
     public Doctor Doctor { get; set; } = null!;
     public Service Service { get; set; } = null!;
     public Office Office { get; set; } = null!;
-    public ApplicationUser Creator { get; set; } = null!;
+    public ApplicationUser? Creator { get; set; }
     public Examination? Examination { get; set; }
     public Invoice? Invoice { get; set; }
     public ICollection<Notification> Notifications { get; set; } = [];

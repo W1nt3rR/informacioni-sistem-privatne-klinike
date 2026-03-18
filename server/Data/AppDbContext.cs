@@ -29,6 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Discount> Discounts => Set<Discount>();
+    public DbSet<InvoiceDiscount> InvoiceDiscounts => Set<InvoiceDiscount>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Message> Messages => Set<Message>();
@@ -256,7 +257,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
             e.HasOne(a => a.Creator)
                 .WithMany(u => u.CreatedAppointments)
                 .HasForeignKey(a => a.CreatorId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
             e.Property(a => a.Status).HasMaxLength(30).HasDefaultValue("zakazan");
             e.Property(a => a.RazlogPromene).HasMaxLength(500);
             e.Property(a => a.RazlogOtkazivanja).HasMaxLength(500);
@@ -464,6 +466,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
             e.Property(d => d.Naziv).HasMaxLength(100).IsRequired();
             e.Property(d => d.Procenat).HasColumnType("decimal(5,2)");
             e.Property(d => d.Aktivan).HasDefaultValue(true);
+            e.Property(d => d.Tip).HasMaxLength(20).HasDefaultValue("opsti");
+            e.Property(d => d.Kod).HasMaxLength(50);
+            e.HasIndex(d => d.Kod).IsUnique().HasFilter("[Kod] IS NOT NULL");
+        });
+
+        builder.Entity<InvoiceDiscount>(e =>
+        {
+            e.HasKey(id => id.InvoiceDiscountId);
+            e.Property(id => id.Procenat).HasColumnType("decimal(5,2)");
+            e.HasOne(id => id.Invoice).WithMany(i => i.InvoiceDiscounts).HasForeignKey(id => id.InvoiceId);
+            e.HasOne(id => id.Discount).WithMany(d => d.InvoiceDiscounts).HasForeignKey(id => id.DiscountId);
         });
     }
 
@@ -493,7 +506,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
             e.HasOne(l => l.User)
                 .WithMany(u => u.ActivityLogs)
                 .HasForeignKey(l => l.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
             e.Property(l => l.Akcija).HasMaxLength(30).IsRequired();
             e.Property(l => l.Tabela).HasMaxLength(100).IsRequired();
             e.Property(l => l.IpAdresa).HasMaxLength(45);

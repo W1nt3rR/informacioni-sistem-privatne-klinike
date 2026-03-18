@@ -26,7 +26,13 @@ public record InvoiceDetailResponse(
     string PatientIme,
     string PatientPrezime,
     List<InvoiceItemResponse> Items,
-    List<PaymentResponse> Payments);
+    List<PaymentResponse> Payments,
+    List<InvoiceDiscountResponse> AppliedDiscounts);
+
+public record InvoiceDiscountResponse(
+    string Naziv,
+    string Tip,
+    decimal Procenat);
 
 public record InvoiceItemResponse(
     int InvoiceItemId,
@@ -47,9 +53,9 @@ public record PaymentResponse(
 
 public record CreateInvoiceRequest(
     int PatientId,
-    decimal PopustProcenat,
     string? Napomena,
-    List<CreateInvoiceItemRequest> Items);
+    List<CreateInvoiceItemRequest> Items,
+    string? KodPopusta = null);
 
 public record CreateInvoiceItemRequest(
     int ServiceId,
@@ -68,3 +74,14 @@ public record DailyRevenueResponse(
     int InvoiceCount,
     int PaymentCount,
     List<InvoiceListResponse> Invoices);
+
+public record InvoicePreviewRequest(
+    int PatientId,
+    List<CreateInvoiceItemRequest> Items,
+    string? KodPopusta = null);
+
+public record InvoicePreviewResponse(
+    decimal UkupanIznos,
+    decimal PopustProcenat,
+    decimal IznosZaNaplatu,
+    List<InvoiceDiscountResponse> AppliedDiscounts);

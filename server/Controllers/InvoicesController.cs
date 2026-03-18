@@ -48,23 +48,12 @@ public class InvoicesController(AppDbContext db) : ControllerBase
             .Include(i => i.Patient)
             .Include(i => i.Items).ThenInclude(it => it.Service)
             .Include(i => i.Payments)
+            .Include(i => i.InvoiceDiscounts).ThenInclude(id => id.Discount)
             .FirstOrDefaultAsync(i => i.InvoiceId == id);
 
         if (inv is null) return NotFound();
 
-        return Ok(new InvoiceDetailResponse(
-            inv.InvoiceId, inv.BrojRacuna, inv.DatumIzdavanja,
-            inv.UkupanIznos, inv.PopustProcenat, inv.IznosZaNaplatu,
-            inv.StatusNaplate, inv.Napomena,
-            inv.PatientId, inv.Patient.Ime, inv.Patient.Prezime,
-            inv.Items.Select(it => new InvoiceItemResponse(
-                it.InvoiceItemId, it.ServiceId, it.Service.Naziv,
-                it.ExaminationId, it.JedinicnaCena, it.Kolicina,
-                it.PopustProcenat, it.Iznos)).ToList(),
-            inv.Payments.OrderByDescending(p => p.DatumPlacanja)
-                .Select(p => new PaymentResponse(
-                    p.PaymentId, p.Iznos, p.NacinPlacanja,
-                    p.DatumPlacanja, p.Napomena)).ToList()));
+        return Ok(MapToDetailResponse(inv));
     }
 
     [HttpPost]
@@ -81,44 +70,92 @@ public class InvoicesController(AppDbContext db) : ControllerBase
         if (services.Count != serviceIds.Count)
             return BadRequest("One or more services not found");
 
-        var brojRacuna = await GenerateBrojRacuna();
-
-        var invoice = new Invoice
-        {
-            PatientId = req.PatientId,
-            BrojRacuna = brojRacuna,
-            PopustProcenat = req.PopustProcenat,
-            Napomena = req.Napomena,
-            DatumIzdavanja = DateTime.UtcNow
-        };
-
+        // Calculate subtotal
         decimal total = 0;
+        var invoiceItems = new List<InvoiceItem>();
         foreach (var item in req.Items)
         {
             var svc = services[item.ServiceId];
             var lineTotal = svc.Cena * item.Kolicina;
-            var discountedTotal = lineTotal - (lineTotal * item.PopustProcenat / 100);
-            var invoiceItem = new InvoiceItem
+            invoiceItems.Add(new InvoiceItem
             {
                 ServiceId = item.ServiceId,
                 ExaminationId = item.ExaminationId,
                 JedinicnaCena = svc.Cena,
                 Kolicina = item.Kolicina,
-                PopustProcenat = item.PopustProcenat,
-                Iznos = discountedTotal
-            };
-            invoice.Items.Add(invoiceItem);
-            total += discountedTotal;
+                PopustProcenat = 0,
+                Iznos = lineTotal
+            });
+            total += lineTotal;
         }
 
-        invoice.UkupanIznos = total;
-        invoice.IznosZaNaplatu = total - (total * req.PopustProcenat / 100);
+        // Gather applicable discounts
+        var appliedDiscounts = await GatherDiscounts(patient, req.Items.Count, req.KodPopusta);
+
+        // Sum discounts, cap at 100%
+        var cumulativePercent = Math.Min(appliedDiscounts.Sum(d => d.Procenat), 100m);
+
+        var brojRacuna = await GenerateBrojRacuna();
+        var discountAmount = total * cumulativePercent / 100;
+
+        var invoice = new Invoice
+        {
+            PatientId = req.PatientId,
+            BrojRacuna = brojRacuna,
+            PopustProcenat = cumulativePercent,
+            Napomena = req.Napomena,
+            DatumIzdavanja = DateTime.UtcNow,
+            UkupanIznos = total,
+            IznosZaNaplatu = total - discountAmount
+        };
+
+        foreach (var item in invoiceItems)
+            invoice.Items.Add(item);
+
+        foreach (var ad in appliedDiscounts)
+        {
+            invoice.InvoiceDiscounts.Add(new InvoiceDiscount
+            {
+                DiscountId = ad.DiscountId,
+                Procenat = ad.Procenat
+            });
+        }
 
         db.Invoices.Add(invoice);
         await db.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = invoice.InvoiceId },
             await GetById(invoice.InvoiceId));
+    }
+
+    /// <summary>Preview discounts and totals before creating an invoice.</summary>
+    [HttpPost("preview")]
+    public async Task<ActionResult<InvoicePreviewResponse>> Preview(InvoicePreviewRequest req)
+    {
+        var patient = await db.Patients.FindAsync(req.PatientId);
+        if (patient is null) return BadRequest("Patient not found");
+
+        var serviceIds = req.Items.Select(i => i.ServiceId).Distinct().ToList();
+        var services = await db.Services
+            .Where(s => serviceIds.Contains(s.ServiceId))
+            .ToDictionaryAsync(s => s.ServiceId);
+
+        decimal total = 0;
+        foreach (var item in req.Items)
+        {
+            if (services.TryGetValue(item.ServiceId, out var svc))
+                total += svc.Cena * item.Kolicina;
+        }
+
+        var appliedDiscounts = await GatherDiscounts(patient, req.Items.Count, req.KodPopusta);
+        var cumulativePercent = Math.Min(appliedDiscounts.Sum(d => d.Procenat), 100m);
+        var discountAmount = total * cumulativePercent / 100;
+
+        return Ok(new InvoicePreviewResponse(
+            total,
+            cumulativePercent,
+            total - discountAmount,
+            appliedDiscounts.Select(d => new InvoiceDiscountResponse(d.Naziv, d.Tip, d.Procenat)).ToList()));
     }
 
     [HttpGet("{id:int}/print")]
@@ -157,6 +194,80 @@ public class InvoicesController(AppDbContext db) : ControllerBase
                 i.UkupanIznos, i.PopustProcenat, i.IznosZaNaplatu,
                 i.StatusNaplate, i.Napomena,
                 i.PatientId, i.Patient.Ime, i.Patient.Prezime)).ToList()));
+    }
+
+    // ---- Private helpers ----
+
+    private async Task<List<Discount>> GatherDiscounts(Patient patient, int itemCount, string? kodPopusta)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var activeDiscounts = await db.Discounts
+            .Where(d => d.Aktivan &&
+                (d.VaziOd == null || d.VaziOd <= today) &&
+                (d.VaziDo == null || d.VaziDo >= today))
+            .ToListAsync();
+
+        var applied = new List<Discount>();
+
+        // 1. Student discount
+        if (patient.JeStudent)
+        {
+            var studentDiscount = activeDiscounts.FirstOrDefault(d => d.Tip == "student");
+            if (studentDiscount != null) applied.Add(studentDiscount);
+        }
+
+        // 2. Pensioner discount
+        if (patient.JePenzioner)
+        {
+            var pensionerDiscount = activeDiscounts.FirstOrDefault(d => d.Tip == "penzioner");
+            if (pensionerDiscount != null) applied.Add(pensionerDiscount);
+        }
+
+        // 3. Packet discounts (pick the best matching: 3+ overrides 2+)
+        if (itemCount >= 3)
+        {
+            var paket3 = activeDiscounts.FirstOrDefault(d => d.Tip == "paket3");
+            if (paket3 != null) applied.Add(paket3);
+        }
+        else if (itemCount >= 2)
+        {
+            var paket2 = activeDiscounts.FirstOrDefault(d => d.Tip == "paket2");
+            if (paket2 != null) applied.Add(paket2);
+        }
+
+        // 4. General discount (opsti) - applies to everyone if > 0%
+        var generalDiscount = activeDiscounts.FirstOrDefault(d => d.Tip == "opsti");
+        if (generalDiscount != null && generalDiscount.Procenat > 0)
+            applied.Add(generalDiscount);
+
+        // 5. Discount code
+        if (!string.IsNullOrWhiteSpace(kodPopusta))
+        {
+            var codeUpper = kodPopusta.Trim().ToUpperInvariant();
+            var codeDiscount = activeDiscounts.FirstOrDefault(d => d.Tip == "kod" && d.Kod == codeUpper);
+            if (codeDiscount != null) applied.Add(codeDiscount);
+        }
+
+        return applied;
+    }
+
+    private static InvoiceDetailResponse MapToDetailResponse(Invoice inv)
+    {
+        return new InvoiceDetailResponse(
+            inv.InvoiceId, inv.BrojRacuna, inv.DatumIzdavanja,
+            inv.UkupanIznos, inv.PopustProcenat, inv.IznosZaNaplatu,
+            inv.StatusNaplate, inv.Napomena,
+            inv.PatientId, inv.Patient.Ime, inv.Patient.Prezime,
+            inv.Items.Select(it => new InvoiceItemResponse(
+                it.InvoiceItemId, it.ServiceId, it.Service.Naziv,
+                it.ExaminationId, it.JedinicnaCena, it.Kolicina,
+                it.PopustProcenat, it.Iznos)).ToList(),
+            inv.Payments.OrderByDescending(p => p.DatumPlacanja)
+                .Select(p => new PaymentResponse(
+                    p.PaymentId, p.Iznos, p.NacinPlacanja,
+                    p.DatumPlacanja, p.Napomena)).ToList(),
+            inv.InvoiceDiscounts.Select(id => new InvoiceDiscountResponse(
+                id.Discount.Naziv, id.Discount.Tip, id.Procenat)).ToList());
     }
 
     private async Task<string> GenerateBrojRacuna()
