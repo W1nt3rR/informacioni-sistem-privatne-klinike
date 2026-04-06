@@ -23,6 +23,11 @@ public class PortalController(
         if (await userManager.FindByNameAsync(req.UserName) is not null)
             return BadRequest(new { message = "Korisničko ime je zauzeto." });
 
+        // Check if JMBG already has a linked user account
+        var existingPatient = await db.Patients.FirstOrDefaultAsync(p => p.JMBG == req.JMBG);
+        if (existingPatient is not null && existingPatient.UserId is not null)
+            return BadRequest(new { message = "Pacijent sa ovim JMBG-om već ima korisnički nalog." });
+
         var user = new ApplicationUser
         {
             UserName = req.UserName,
@@ -33,21 +38,34 @@ public class PortalController(
 
         var result = await userManager.CreateAsync(user, req.Password);
         if (!result.Succeeded)
-            return BadRequest(new { message = string.Join("; ", result.Errors.Select(e => e.Description)) });
+        {
+            var errors = result.Errors.Select(e => e.Code switch
+            {
+                "PasswordTooShort" => "Lozinka mora imati najmanje 6 karaktera.",
+                "PasswordRequiresUpper" => "Lozinka mora sadržati veliko slovo.",
+                "PasswordRequiresLower" => "Lozinka mora sadržati malo slovo.",
+                "PasswordRequiresDigit" => "Lozinka mora sadržati cifru.",
+                "DuplicateUserName" => "Korisničko ime je zauzeto.",
+                _ => e.Description
+            });
+            return BadRequest(new { message = string.Join(" ", errors) });
+        }
 
         var roleResult = await userManager.AddToRoleAsync(user, "pacijent");
         if (!roleResult.Succeeded)
+        {
+            await userManager.DeleteAsync(user);
             return BadRequest(new { message = "Greška pri dodeli uloge." });
+        }
 
         // Link to existing patient by JMBG or create new
-        var patient = await db.Patients.FirstOrDefaultAsync(p => p.JMBG == req.JMBG);
-        if (patient is not null)
+        if (existingPatient is not null)
         {
-            patient.UserId = user.Id;
+            existingPatient.UserId = user.Id;
         }
         else
         {
-            patient = new Patient
+            var patient = new Patient
             {
                 Ime = req.Ime,
                 Prezime = req.Prezime,

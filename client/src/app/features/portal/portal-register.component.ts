@@ -48,17 +48,23 @@ import { environment } from '../../../environments/environment';
               <legend class="fieldset-legend">Lozinka</legend>
               <label class="input w-full flex items-center gap-2">
                 <input [type]="hidePassword() ? 'password' : 'text'" class="grow"
-                       [(ngModel)]="model.password" name="password" required />
+                       [(ngModel)]="model.password" name="password" required minlength="6"
+                       #passwordField="ngModel" />
                 <button type="button" class="btn btn-ghost btn-xs btn-square"
                         (click)="hidePassword.update(v => !v)">
                   <span class="material-icons text-sm">{{ hidePassword() ? 'visibility_off' : 'visibility' }}</span>
                 </button>
               </label>
+              <p class="text-xs text-base-content/50 mt-1">Min. 6 karaktera, veliko slovo, malo slovo i cifra</p>
             </fieldset>
 
             <fieldset class="fieldset">
               <legend class="fieldset-legend">JMBG</legend>
-              <input class="input w-full" [(ngModel)]="model.jmbg" name="jmbg" required maxlength="13" />
+              <input class="input w-full" [(ngModel)]="model.jmbg" name="jmbg" required
+                     minlength="13" maxlength="13" pattern="\\d{13}" #jmbgField="ngModel" />
+              @if (jmbgField.invalid && jmbgField.touched) {
+                <p class="text-xs text-error mt-1">JMBG mora sadržati tačno 13 cifara</p>
+              }
             </fieldset>
 
             <div class="grid grid-cols-2 gap-3">
@@ -71,8 +77,8 @@ import { environment } from '../../../environments/environment';
                 <legend class="fieldset-legend">Pol</legend>
                 <select class="select w-full" [(ngModel)]="model.pol" name="pol" required>
                   <option value="" disabled>Izaberite</option>
-                  <option value="muški">Muški</option>
-                  <option value="ženski">Ženski</option>
+                  <option value="M">Muški</option>
+                  <option value="Ž">Ženski</option>
                 </select>
               </fieldset>
             </div>
