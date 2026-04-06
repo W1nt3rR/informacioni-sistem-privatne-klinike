@@ -161,10 +161,12 @@ public class WaitingListController(AppDbContext db) : ControllerBase
         if (timeStart < wh.VremeOd || timeEnd > wh.VremeDo)
             return BadRequest(new { message = "Termin je van radnog vremena lekara." });
 
+        var nonBlockingStatuses = new[] { "otkazao_pacijent", "otkazala_klinika", "nije_se_pojavio", "zahtev" };
+
         // Conflict: doctor busy
         var doctorBusy = await db.Appointments.AnyAsync(a =>
             a.DoctorId == doctorId.Value &&
-            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio" &&
+            !nonBlockingStatuses.Contains(a.Status) &&
             a.DatumVreme < kraj &&
             a.DatumVreme.AddMinutes(a.TrajanjeMinuta) > req.DatumVreme);
         if (doctorBusy) return BadRequest(new { message = "Lekar je zauzet u odabranom terminu." });
@@ -172,7 +174,7 @@ public class WaitingListController(AppDbContext db) : ControllerBase
         // Conflict: office busy
         var officeBusy = await db.Appointments.AnyAsync(a =>
             a.OfficeId == req.OfficeId &&
-            a.Status != "otkazao_pacijent" && a.Status != "otkazala_klinika" && a.Status != "nije_se_pojavio" &&
+            !nonBlockingStatuses.Contains(a.Status) &&
             a.DatumVreme < kraj &&
             a.DatumVreme.AddMinutes(a.TrajanjeMinuta) > req.DatumVreme);
         if (officeBusy) return BadRequest(new { message = "Ordinacija je zauzeta u odabranom terminu." });
@@ -192,71 +194,6 @@ public class WaitingListController(AppDbContext db) : ControllerBase
         item.Status = "zakazan";
         await db.SaveChangesAsync();
 
-        // Auto-create invoice for converted appointment
-        var patient = await db.Patients.FindAsync(item.PatientId);
-        var discountPercent = await CalculateDiscountPercent(patient!);
-
-        var brojRacuna = await GenerateBrojRacuna();
-        var invoice = new Invoice
-        {
-            PatientId = item.PatientId,
-            AppointmentId = appointment.AppointmentId,
-            BrojRacuna = brojRacuna,
-            PopustProcenat = discountPercent,
-            DatumIzdavanja = DateTime.UtcNow,
-        };
-        var lineTotal = service.Cena;
-        var discountedLine = lineTotal * (1 - discountPercent / 100m);
-        invoice.Items.Add(new InvoiceItem
-        {
-            ServiceId = service.ServiceId,
-            JedinicnaCena = service.Cena,
-            Kolicina = 1,
-            PopustProcenat = discountPercent,
-            Iznos = Math.Round(discountedLine, 2),
-        });
-        invoice.UkupanIznos = lineTotal;
-        invoice.IznosZaNaplatu = Math.Round(discountedLine, 2);
-        db.Invoices.Add(invoice);
-        await db.SaveChangesAsync();
-
         return Ok(new { message = "Termin uspešno zakazan sa liste čekanja.", appointmentId = appointment.AppointmentId });
-    }
-
-    private async Task<decimal> CalculateDiscountPercent(Patient patient)
-    {
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        var applicableTypes = new List<string> { "opsti" };
-        if (patient.JeStudent) applicableTypes.Add("student");
-        if (patient.JePenzioner) applicableTypes.Add("penzioner");
-
-        var discounts = await db.Discounts
-            .Where(d => d.Aktivan &&
-                applicableTypes.Contains(d.Tip) &&
-                (d.VaziOd == null || d.VaziOd <= today) &&
-                (d.VaziDo == null || d.VaziDo >= today))
-            .ToListAsync();
-
-        var total = discounts.Sum(d => d.Procenat);
-        return Math.Min(total, 100m);
-    }
-
-    private async Task<string> GenerateBrojRacuna()
-    {
-        var today = DateTime.UtcNow.ToString("yyyyMMdd");
-        var prefix = $"RN-{today}-";
-        var lastNumber = await db.Invoices
-            .Where(i => i.BrojRacuna.StartsWith(prefix))
-            .OrderByDescending(i => i.BrojRacuna)
-            .Select(i => i.BrojRacuna)
-            .FirstOrDefaultAsync();
-        int seq = 1;
-        if (lastNumber is not null)
-        {
-            var numPart = lastNumber[prefix.Length..];
-            if (int.TryParse(numPart, out int parsed))
-                seq = parsed + 1;
-        }
-        return $"{prefix}{seq:D3}";
     }
 }

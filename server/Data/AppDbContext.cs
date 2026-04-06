@@ -253,6 +253,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
             e.HasOne(a => a.Office)
                 .WithMany(o => o.Appointments)
                 .HasForeignKey(a => a.OfficeId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasOne(a => a.Creator)
                 .WithMany(u => u.CreatedAppointments)

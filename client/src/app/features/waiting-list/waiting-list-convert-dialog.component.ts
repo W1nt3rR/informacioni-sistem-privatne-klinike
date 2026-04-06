@@ -44,7 +44,7 @@ export interface ConvertDialogData {
 
       <fieldset class="fieldset">
         <legend class="fieldset-legend">Ordinacija</legend>
-        <select class="select w-full" [(ngModel)]="model.officeId" name="officeId">
+        <select class="select w-full" [(ngModel)]="model.officeId" name="officeId" (ngModelChange)="onDoctorOrDateChange()">
           <option [ngValue]="null" disabled>Izaberite ordinaciju</option>
           @for (o of offices(); track o.officeId) {
             <option [ngValue]="o.officeId">{{ o.naziv }}</option>
@@ -120,13 +120,15 @@ export class WaitingListConvertDialogComponent implements OnInit {
     this.selectedSlot = null;
     this.slotsLoaded.set(false);
     const doctorId = this.effectiveDoctorId();
-    if (doctorId && this.model.date) {
+    if (doctorId && this.model.date && this.model.officeId) {
       this.api.get<AvailableSlot[]>(
-        `appointments/available-slots?doctorId=${doctorId}&serviceId=${this.data.serviceId}&date=${this.model.date}`
+        `appointments/available-slots?doctorId=${doctorId}&serviceId=${this.data.serviceId}&date=${this.model.date}&officeId=${this.model.officeId}`
       ).subscribe(s => {
         this.slots.set(s);
         this.slotsLoaded.set(true);
       });
+    } else {
+      this.slots.set([]);
     }
   }
 

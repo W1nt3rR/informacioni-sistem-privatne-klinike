@@ -20,7 +20,7 @@ public class ReportsController(AppDbContext db) : ControllerBase
         var doctorCount = await db.Doctors.CountAsync(d => d.Aktivan);
 
         var todayAppointments = await db.Appointments
-            .Where(a => a.DatumVreme >= today && a.DatumVreme < tomorrow)
+            .Where(a => a.DatumVreme >= today && a.DatumVreme < tomorrow && a.Status != "zahtev")
             .CountAsync();
 
         var unpaidInvoices = await db.Invoices
@@ -28,7 +28,7 @@ public class ReportsController(AppDbContext db) : ControllerBase
             .CountAsync();
 
         var waitingListCount = await db.WaitingListItems
-            .CountAsync(w => w.Status == "ceka");
+            .CountAsync(w => w.Status == "aktivan");
 
         var todayRevenue = await db.Payments
             .Where(p => p.DatumPlacanja >= today && p.DatumPlacanja < tomorrow)
@@ -245,15 +245,15 @@ public class ReportsController(AppDbContext db) : ControllerBase
         var toDate = to ?? DateTime.UtcNow;
 
         var appointments = db.Appointments
-            .Where(a => a.DatumVreme >= fromDate && a.DatumVreme <= toDate);
+            .Where(a => a.DatumVreme >= fromDate && a.DatumVreme <= toDate && a.Status != "zahtev");
 
         var byOffice = await appointments
             .Include(a => a.Office)
-            .GroupBy(a => new { a.OfficeId, a.Office.Naziv })
+            .GroupBy(a => new { a.OfficeId, OfficeName = a.Office != null ? a.Office.Naziv : "—" })
             .Select(g => new
             {
                 g.Key.OfficeId,
-                OfficeName = g.Key.Naziv,
+                g.Key.OfficeName,
                 TotalAppointments = g.Count(),
                 Completed = g.Count(a => a.Status == "realizovan"),
                 Cancelled = g.Count(a => a.Status == "otkazao_pacijent"
@@ -291,7 +291,7 @@ public class ReportsController(AppDbContext db) : ControllerBase
 
         var services = await db.Appointments
             .Include(a => a.Service)
-            .Where(a => a.DatumVreme >= fromDate && a.DatumVreme <= toDate)
+            .Where(a => a.DatumVreme >= fromDate && a.DatumVreme <= toDate && a.Status != "zahtev")
             .GroupBy(a => new { a.ServiceId, a.Service.Naziv, a.Service.Cena })
             .Select(g => new
             {

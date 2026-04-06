@@ -5,6 +5,7 @@ import { ApiService } from '../../shared/services/api.service';
 import { DialogService } from '../../shared/services/dialog.service';
 import { ThemeService } from '../../shared/services/theme.service';
 import { SettingsDialogComponent } from '../../shared/components/settings-dialog.component';
+import { ChangePasswordDialogComponent } from '../auth/change-password-dialog.component';
 
 interface NavItem {
   label: string;
@@ -118,6 +119,10 @@ export class LayoutComponent implements OnInit {
 
   openSettings(): void {
     this.dialog.open(SettingsDialogComponent);
+  }
+
+  openChangePassword(): void {
+    this.dialog.open(ChangePasswordDialogComponent);
   }
 
   logout(): void {

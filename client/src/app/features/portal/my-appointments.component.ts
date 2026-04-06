@@ -20,7 +20,7 @@ interface PortalAppointment {
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-semibold m-0">Moji termini</h2>
       <a routerLink="/portal/request-appointment" class="btn btn-primary">
-        <span class="material-icons text-sm">add</span> Zakaži termin
+        <span class="material-icons text-sm">add</span> Novi zahtev
       </a>
     </div>
 
@@ -33,7 +33,7 @@ interface PortalAppointment {
 
         @if (activeTab() === 0) {
           @if (upcoming().length === 0) {
-            <p class="text-base-content/60 text-center py-8">Nemate zakazane termine.</p>
+            <p class="text-base-content/60 text-center py-8">Nemate aktivne termine ni zahteve.</p>
           } @else {
             <table class="table">
               <thead><tr><th>Datum i vreme</th><th>Usluga</th><th>Lekar</th><th>Trajanje</th><th>Status</th></tr></thead>
@@ -93,6 +93,7 @@ export class MyAppointmentsComponent implements OnInit {
 
   statusLabel(s: string): string {
     const map: Record<string, string> = {
+      zahtev: 'Poslat zahtev',
       zakazan: 'Zakazan', realizovan: 'Realizovan',
       otkazao_pacijent: 'Otkazao pacijent', otkazala_klinika: 'Otkazala klinika',
       nije_se_pojavio: 'Nije se pojavio',
@@ -102,6 +103,7 @@ export class MyAppointmentsComponent implements OnInit {
 
   statusClass(s: string): string {
     const map: Record<string, string> = {
+      zahtev: 'badge-secondary',
       zakazan: 'badge-info',
       realizovan: 'badge-success',
       otkazao_pacijent: 'badge-error',

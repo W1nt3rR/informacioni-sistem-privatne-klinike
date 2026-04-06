@@ -62,7 +62,7 @@ export interface AppointmentDialogData {
         </fieldset>
         <fieldset class="fieldset">
           <legend class="fieldset-legend">Ordinacija</legend>
-          <select class="select w-full" formControlName="officeId">
+          <select class="select w-full" formControlName="officeId" (change)="onDoctorOrDateChange()">
             <option [value]="0" disabled>Izaberite</option>
             @for (o of offices(); track o.officeId) {
               <option [value]="o.officeId">{{ o.naziv }}</option>
@@ -163,14 +163,16 @@ export class AppointmentDialogComponent implements OnInit {
   onDoctorOrDateChange(): void {
     this.selectedSlot.set(null);
     this.slotsLoaded.set(false);
-    const { doctorId, serviceId, date } = this.form.getRawValue();
-    if (doctorId && serviceId && date) {
+    const { doctorId, serviceId, officeId, date } = this.form.getRawValue();
+    if (doctorId && serviceId && officeId && date) {
       this.api.get<AvailableSlot[]>(
-        `appointments/available-slots?doctorId=${doctorId}&serviceId=${serviceId}&date=${date}`
+        `appointments/available-slots?doctorId=${doctorId}&serviceId=${serviceId}&date=${date}&officeId=${officeId}`
       ).subscribe(s => {
         this.slots.set(s);
         this.slotsLoaded.set(true);
       });
+    } else {
+      this.slots.set([]);
     }
   }
 

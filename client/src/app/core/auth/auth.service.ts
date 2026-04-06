@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { LoginRequest, LoginResponse, RefreshTokenRequest, UserInfo } from './auth.models';
+import { ChangePasswordRequest, LoginRequest, LoginResponse, RefreshTokenRequest, UserInfo } from './auth.models';
 
 const TOKEN_KEY = 'access_token';
 const REFRESH_KEY = 'refresh_token';
@@ -37,6 +37,10 @@ export class AuthService {
         return throwError(() => err);
       }),
     );
+  }
+
+  changePassword(request: ChangePasswordRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/auth/change-password`, request);
   }
 
   logout(): void {

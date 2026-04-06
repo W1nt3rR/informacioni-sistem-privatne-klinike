@@ -172,7 +172,7 @@ public class ExaminationsController(AppDbContext db) : ControllerBase
 
         var appointment = await db.Appointments.FindAsync(exam.AppointmentId);
         if (appointment != null)
-            appointment.Status = "zavrsen";
+            appointment.Status = "realizovan";
 
         await db.SaveChangesAsync();
         return NoContent();

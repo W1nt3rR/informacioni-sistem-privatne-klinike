@@ -106,6 +106,9 @@ public class PortalController(
         var doctor = await db.Doctors.FindAsync(req.DoctorId);
         if (doctor is null) return BadRequest(new { message = "Lekar nije pronađen." });
 
+        if (req.DatumVreme < DateTime.Now)
+            return BadRequest(new { message = "Ne možete podneti zahtev za termin u prošlosti." });
+
         if (doctor.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier))
             return BadRequest(new { message = "Ne možete zakazati termin kod sebe." });
 
@@ -124,7 +127,7 @@ public class PortalController(
         db.Appointments.Add(appointment);
         await db.SaveChangesAsync();
 
-        return Ok(new { message = "Termin uspešno zakazan.", appointmentId = appointment.AppointmentId });
+        return Ok(new { message = "Zahtev za termin je uspešno poslat.", appointmentId = appointment.AppointmentId });
     }
 
     // ─── My Medical Reports ──────────────────────────────────────────

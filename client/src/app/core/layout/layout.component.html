@@ -91,6 +91,7 @@
           }
           <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box shadow-lg w-52 z-50 mt-2">
             <li class="disabled"><a><span class="material-icons text-base">person</span>{{ user()?.userName }}</a></li>
+            <li><a (click)="openChangePassword()"><span class="material-icons text-base">lock_reset</span>Promeni lozinku</a></li>
             <li><a (click)="logout()"><span class="material-icons text-base">logout</span>Odjavi se</a></li>
           </ul>
         </div>

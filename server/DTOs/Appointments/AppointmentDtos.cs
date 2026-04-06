@@ -8,7 +8,7 @@ public record AppointmentListResponse(
     string LekarIme,
     int ServiceId,
     string UslugaNaziv,
-    int OfficeId,
+    int? OfficeId,
     string OrdinacijaNaziv,
     DateTime DatumVreme,
     int TrajanjeMinuta,
@@ -22,7 +22,7 @@ public record AppointmentDetailResponse(
     string LekarIme,
     int ServiceId,
     string UslugaNaziv,
-    int OfficeId,
+    int? OfficeId,
     string OrdinacijaNaziv,
     DateTime DatumVreme,
     int TrajanjeMinuta,
@@ -43,6 +43,12 @@ public record RescheduleAppointmentRequest(
     DateTime DatumVreme,
     int? OfficeId,
     string? RazlogPromene);
+
+public record ApproveAppointmentRequest(
+    int OfficeId);
+
+public record RejectAppointmentRequest(
+    string? RazlogOtkazivanja);
 
 public record CancelAppointmentRequest(
     string Status,

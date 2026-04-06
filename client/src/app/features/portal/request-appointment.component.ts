@@ -12,7 +12,10 @@ interface DoctorOption { doctorId: number; ime: string; prezime: string; }
   imports: [FormsModule],
   template: `
     <div class="max-w-lg mx-auto">
-      <h2 class="text-2xl font-semibold mb-6">Zakaži novi termin</h2>
+      <h2 class="text-2xl font-semibold mb-2">Pošalji zahtev za termin</h2>
+      <p class="text-sm text-base-content/70 mb-6">
+        Klinika će pregledati zahtev, dodeliti ordinaciju i potvrditi termin ako je dostupan.
+      </p>
 
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
@@ -59,7 +62,7 @@ interface DoctorOption { doctorId: number; ime: string; prezime: string; }
             <div class="flex gap-3 justify-end">
               <button type="button" class="btn" (click)="goBack()">Otkaži</button>
               <button type="submit" class="btn btn-primary" [disabled]="!form.valid || loading()">
-                {{ loading() ? 'Zakazivanje...' : 'Zakaži termin' }}
+                {{ loading() ? 'Slanje zahteva...' : 'Pošalji zahtev' }}
               </button>
             </div>
           </form>
@@ -111,7 +114,7 @@ export class RequestAppointmentComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Greška pri zakazivanju.');
+        this.errorMessage.set(err.error?.message ?? 'Greška pri slanju zahteva.');
       },
     });
   }

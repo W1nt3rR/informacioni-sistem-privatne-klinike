@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { DialogService } from '../../shared/services/dialog.service';
+import { ChangePasswordDialogComponent } from '../../core/auth/change-password-dialog.component';
 
 @Component({
   selector: 'app-portal-layout',
@@ -40,6 +42,10 @@ import { AuthService } from '../../core/auth/auth.service';
               <span class="material-icons text-sm">person</span>
               {{ user()?.ime }} {{ user()?.prezime }}
             </a></li>
+            <li><a (click)="openChangePassword()">
+              <span class="material-icons text-sm">lock_reset</span>
+              Promeni lozinku
+            </a></li>
             <li><a (click)="logout()">
               <span class="material-icons text-sm">logout</span>
               Odjavi se
@@ -56,7 +62,12 @@ import { AuthService } from '../../core/auth/auth.service';
 })
 export class PortalLayoutComponent {
   private authService = inject(AuthService);
+  private dialog = inject(DialogService);
   user = this.authService.user;
+
+  openChangePassword(): void {
+    this.dialog.open(ChangePasswordDialogComponent);
+  }
 
   logout(): void {
     this.authService.logout();

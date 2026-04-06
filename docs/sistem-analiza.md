@@ -23,14 +23,14 @@
 
 Informacioni sistem privatne specijalističke klinike namenjen je digitalizaciji i automatizaciji ključnih poslovnih procesa: prijem i evidencija pacijenata, zakazivanje i realizacija pregleda, vođenje medicinske dokumentacije, naplata usluga i upravljanje resursima klinike (lekari, ordinacije, termini).
 
-Sistem pokriva celokupan životni ciklus posete pacijenta — od registracije, preko zakazivanja termina, realizacije pregleda uz unos medicinske dokumentacije, do formiranja računa i generisanja izveštaja za menadžment.
+Sistem pokriva celokupan životni ciklus posete pacijenta — od registracije, preko direktnog zakazivanja termina od strane osoblja ili slanja zahteva za termin preko portala, realizacije pregleda uz unos medicinske dokumentacije, do formiranja računa nakon obavljene usluge i generisanja izveštaja za menadžment.
 
 ### 1.2 Korisnici sistema i uloge
 
 | Uloga | Opis | Ključne funkcije |
 |-------|------|------------------|
 | **Administrator** | Upravljanje celim sistemom, konfiguracija i korisnici | Kreiranje korisnika, dodela uloga, šifarnici, radno vreme, logovi |
-| **Recepcija** | Prijem pacijenata, zakazivanje, naplata | Registracija pacijenata, zakazivanje termina, izdavanje računa |
+| **Recepcija** | Prijem pacijenata, zakazivanje, naplata | Registracija pacijenata, zakazivanje termina, odobravanje portal zahteva, izdavanje računa |
 | **Lekar** | Obavljanje pregleda i vođenje dokumentacije | Pristup rasporedu i kartonu pacijenta, unos nalaza, dijagnoza, terapija |
 | **Menadžer** | Praćenje performansi i finansija klinike | Pregled izveštaja, analitika, statistika popunjenosti |
 | **Pacijent** *(portal)* | Samouslužni pristup preko portala | Pregled termina, istorija poseta, zahtev za termin, poruke |
@@ -71,7 +71,7 @@ Sistem pokriva celokupan životni ciklus posete pacijenta — od registracije, p
 | ID | Zahtev | Prioritet |
 |----|--------|-----------|
 | FR-030 | Sistem mora omogućiti kreiranje termina za pregled (pacijent, lekar, usluga, datum/vreme, ordinacija) | Visok |
-| FR-031 | Sistem mora prikazati kalendar termina po lekaru, ordinaciji i po danu/nedelji/mesecu | Visok |
+| FR-031 | Sistem mora prikazati raspored termina po lekaru i izabranom periodu, uz filtriranje po statusu | Visok |
 | FR-032 | Sistem mora automatski proveravati konflikte termina (lekar ili ordinacija zauzeti) | Visok |
 | FR-033 | Sistem mora omogućiti promenu termina uz evidentiranje razloga promene | Visok |
 | FR-034 | Sistem mora podržati otkazivanje termina sa statusom (otkazao pacijent / klinika / nije se pojavio) | Visok |
@@ -81,8 +81,8 @@ Sistem pokriva celokupan životni ciklus posete pacijenta — od registracije, p
 
 | ID | Zahtev | Prioritet |
 |----|--------|-----------|
-| FR-040 | Sistem treba da šalje podsetnik pacijentu pre zakazanog termina (SMS/email simulacija) | Srednji |
-| FR-041 | Sistem treba da generiše notifikaciju lekaru o dnevnom rasporedu | Srednji |
+| FR-040 | Sistem treba da generiše interni podsetnik pacijentu pre zakazanog termina | Srednji |
+| FR-041 | Sistem treba da generiše interno obaveštenje lekaru o dnevnom rasporedu | Srednji |
 | FR-042 | Sistem treba da automatski predloži kontrolni termin po preporuci lekara | Nizak |
 
 #### Modul 6: Realizacija pregleda i medicinska dokumentacija
@@ -97,11 +97,11 @@ Sistem pokriva celokupan životni ciklus posete pacijenta — od registracije, p
 | FR-055 | Sistem mora omogućiti kreiranje i štampu medicinskog izveštaja (PDF) | Visok |
 | FR-056 | Sistem mora omogućiti pregled istorije medicinskih izveštaja pacijenta | Visok |
 
-#### Modul 7: Naplata, računi i fiskalizacija
+#### Modul 7: Naplata, računi i plaćanja
 
 | ID | Zahtev | Prioritet |
 |----|--------|-----------|
-| FR-060 | Sistem mora omogućiti formiranje računa na osnovu obavljenih usluga | Visok |
+| FR-060 | Sistem mora omogućiti formiranje računa na osnovu obavljenih usluga/pregleda | Visok |
 | FR-061 | Sistem mora podržati više načina plaćanja (gotovina, kartica, virman) | Visok |
 | FR-062 | Sistem treba da podrži evidenciju popusta i akcija | Srednji |
 | FR-063 | Sistem mora evidentirati status naplate (plaćeno, neplaćeno, delimično) | Visok |
@@ -130,7 +130,7 @@ Sistem pokriva celokupan životni ciklus posete pacijenta — od registracije, p
 
 | ID | Zahtev | Prioritet |
 |----|--------|-----------|
-| FR-090 | Pacijent može pregledati svoje zakazane termine i istoriju poseta | Nizak |
+| FR-090 | Pacijent može pregledati svoje termine, poslate zahteve i istoriju poseta | Nizak |
 | FR-091 | Pacijent može podneti zahtev za termin (odobrava recepcija) | Nizak |
 | FR-092 | Pacijent može preuzeti medicinski izveštaj ili potvrdu o pregledu | Nizak |
 | FR-093 | Pacijent može slati poruke recepciji ili lekaru | Nizak |
@@ -140,7 +140,7 @@ Sistem pokriva celokupan životni ciklus posete pacijenta — od registracije, p
 | ID | Zahtev | Kategorija |
 |----|--------|------------|
 | NFR-004 | Sva komunikacija mora biti enkriptovana putem HTTPS | Bezbednost |
-| NFR-005 | Lozinke moraju biti hashirane (bcrypt ili Argon2) | Bezbednost |
+| NFR-005 | Lozinke moraju biti hashirane kroz ASP.NET Identity mehanizam | Bezbednost |
 | NFR-006 | Autentifikacija mora koristiti JWT tokene sa refresh mehanizmom | Bezbednost |
 | NFR-007 | Interfejs mora biti responsivan (desktop + tablet) | Upotrebljivost |
 | NFR-009 | Kompletna revizijska staza (audit trail) za sve izmene podataka | Bezbednost |
@@ -151,14 +151,16 @@ Sistem pokriva celokupan životni ciklus posete pacijenta — od registracije, p
 
 | Komponenta | Tehnologija |
 |------------|-------------|
-| Frontend | Angular (TypeScript, Angular Material) |
-| Backend | ASP.NET Core Web API (C#) |
+| Frontend | Angular 21 (standalone komponente), Tailwind CSS v4, DaisyUI |
+| Backend | ASP.NET Core Web API (.NET 10, C#) |
 | Baza podataka | Microsoft SQL Server |
 | ORM | Entity Framework Core |
-| Autentifikacija | ASP.NET Identity + JWT Bearer tokeni |
-| API dokumentacija | Swagger / OpenAPI |
+| Autentifikacija | ASP.NET Identity + JWT access/refresh tokeni |
+| API dokumentacija | OpenAPI + Swagger UI |
 | Izveštaji | PDF generisanje (QuestPDF) |
 | Verzionisanje | Git |
+
+> **Napomena o trenutnoj implementaciji:** Sistem koristi interne notifikacije i evidenciju slanja u bazi. U trenutnoj verziji ne postoji integracija sa eksternim SMS/email servisom niti sa fiskalnim sistemom.
 
 ---
 
@@ -183,8 +185,8 @@ U DFD dijagramima koristi se sledeća notacija prilagođena Mermaid sintaksi:
 | E2 | Lekar | Medicinski stručnjak koji obavlja preglede |
 | E3 | Recepcija / Admin | Administrativno osoblje klinike |
 | E4 | Menadžer | Rukovodilac klinike, prati performanse |
-| E5 | Email/SMS Servis | Eksterni servis za slanje obaveštenja |
-| E6 | Fiskalni Sistem | Sistem za fiskalizaciju računa |
+
+> Trenutna implementacija nema spoljne integracije za slanje poruka ili fiskalizaciju; obaveštenja i naplata vode se interno u sistemu.
 
 ---
 
@@ -195,7 +197,7 @@ Kontekstni dijagram prikazuje celokupan sistem kao jedan proces i sve spoljne en
 ```mermaid
 graph LR
     E1["E1: Pacijent"] -->|"Lični podaci<br/>Zahtev za termin<br/>Poruka"| P0(["0. IS Privatne Klinike"])
-    P0 -->|"Potvrda termina<br/>Medicinski izveštaj<br/>Račun<br/>Podsetnik"| E1
+    P0 -->|"Status zahteva / potvrda termina<br/>Medicinski izveštaj<br/>Račun<br/>Obaveštenje"| E1
 
     E2["E2: Lekar"] -->|"Nalaz<br/>Dijagnoza<br/>Terapija"| P0
     P0 -->|"Dnevni raspored<br/>Karton pacijenta<br/>Obaveštenje"| E2
@@ -205,12 +207,6 @@ graph LR
 
     E4["E4: Menadžer"] -->|"Zahtev za izveštaj<br/>Parametri"| P0
     P0 -->|"Izveštaji<br/>Statistika<br/>Analitika"| E4
-
-    E5["E5: Email/SMS Servis"] -->|"Status isporuke"| P0
-    P0 -->|"Zahtev za slanje obaveštenja"| E5
-
-    E6["E6: Fiskalni Sistem"] -->|"Potvrda fiskalizacije"| P0
-    P0 -->|"Podaci za fiskalizaciju"| E6
 ```
 
 ---
@@ -272,7 +268,6 @@ graph TD
     E1["E1: Pacijent"]
     E2["E2: Lekar"]
     E3["E3: Recepcija / Admin"]
-    E5["E5: Email/SMS Servis"]
 
     P4(["4. Zakazivanje<br/>termina"])
     P5(["5. Obaveštenja<br/>i podsetnici"])
@@ -293,10 +288,9 @@ graph TD
     P4 -.->|"čita"| D3
     P4 -.->|"čita"| D5
 
-    P5 -->|"Podsetnik"| E5
-    E5 -->|"Status isporuke"| P5
     P5 <--> D9
     P5 -.->|"čita"| D6
+    P5 -.->|"čita"| D7
 
     E2 -->|"Nalaz, Dijagnoza"| P6
     P6 -->|"Karton pacijenta"| E2
@@ -313,7 +307,6 @@ graph TD
     E1["E1: Pacijent"]
     E3["E3: Recepcija / Admin"]
     E4["E4: Menadžer"]
-    E6["E6: Fiskalni Sistem"]
 
     P7(["7. Naplata<br/>i računi"])
     P8(["8. Izveštaji<br/>i analitika"])
@@ -327,8 +320,6 @@ graph TD
 
     E3 -->|"Zahtev za naplatu"| P7
     P7 -->|"Račun"| E1
-    P7 -->|"Fiskalni podaci"| E6
-    E6 -->|"Potvrda fiskalizacije"| P7
     P7 <--> D8
     P7 -.->|"čita"| D7
     P7 -.->|"čita"| D4
@@ -340,7 +331,7 @@ graph TD
     P8 -.->|"čita"| D8
 
     E1 -->|"Zahtev, Poruka"| P10
-    P10 -->|"Termini, Istorija"| E1
+    P10 -->|"Termini, zahtevi, istorija"| E1
     P10 -.->|"čita"| D2
     P10 -.->|"čita"| D6
     P10 -.->|"čita"| D7
@@ -484,7 +475,6 @@ graph TD
     D4[("D4: Usluge")]
     D5[("D5: Ordinacije")]
     D6[("D6: Termini")]
-    D9[("D9: Obaveštenja")]
     D11[("D11: Log aktivnosti")]
     D13[("D13: Lista čekanja")]
 
@@ -498,7 +488,6 @@ graph TD
     P43 -->|"Rezultat provere"| P41
     P41 -->|"Novi termin"| D6
     P41 -->|"Potvrda"| E3
-    P41 -->|"Termin za obaveštavanje"| D9
 
     E3 -->|"Filter kalendara"| P42
     E2 -->|"Zahtev za raspored"| P42
@@ -529,7 +518,6 @@ graph TD
 ```mermaid
 graph TD
     E2["E2: Lekar"]
-    E5["E5: Email/SMS Servis"]
 
     P51(["5.1 Slanje podsetnika pacijentima"])
     P52(["5.2 Notifikacija lekaru o rasporedu"])
@@ -540,9 +528,8 @@ graph TD
     D9[("D9: Obaveštenja")]
 
     D6 -->|"Zakazani termini"| P51
-    P51 -->|"Podsetnik za slanje"| E5
-    E5 -->|"Status isporuke"| P51
     P51 -->|"Zapis obaveštenja"| D9
+    P51 -->|"Podsetnik"| D9
 
     D6 -->|"Dnevni termini lekara"| P52
     P52 -->|"Dnevni raspored"| E2
@@ -550,7 +537,7 @@ graph TD
 
     D7 -->|"Preporuka za kontrolu"| P53
     P53 -->|"Predlog kontrolnog termina"| D9
-    P53 -->|"Obaveštenje o kontroli"| E5
+    P53 -->|"Obaveštenje o kontroli"| D9
 ```
 
 #### 2.4.6 Proces 6: Realizacija pregleda i medicinska dokumentacija
@@ -612,7 +599,6 @@ graph TD
 graph TD
     E1["E1: Pacijent"]
     E3["E3: Recepcija / Admin"]
-    E6["E6: Fiskalni Sistem"]
 
     P71(["7.1 Formiranje računa"])
     P72(["7.2 Evidencija plaćanja"])
@@ -639,8 +625,6 @@ graph TD
     D8 -->|"Račun za plaćanje"| P72
     P72 -->|"Evidentirano plaćanje"| D18
     P72 -->|"Ažuriran status"| D8
-    P72 -->|"Fiskalni podaci"| E6
-    E6 -->|"Potvrda fiskalizacije"| P72
 
     E3 -->|"Definicija popusta"| P73
     P73 -->|"Novi/ažuriran popust"| D19
@@ -754,14 +738,14 @@ graph TD
     D22[("D22: Poruke")]
 
     E1 -->|"Zahtev za pregled"| P101
-    D6 -->|"Zakazani termini"| P101
+    D6 -->|"Termini i zahtevi"| P101
     D7 -->|"Istorija pregleda"| P101
     P101 -->|"Lista termina i istorija"| E1
 
     E1 -->|"Željeni termin"| P102
     P102 -->|"Zahtev za odobrenje"| E3
     E3 -->|"Odobrenje/Odbijanje"| P102
-    P102 -->|"Novi termin"| D6
+    P102 -->|"Termin sa statusom zahtev"| D6
     P102 -->|"Status zahteva"| E1
 
     E1 -->|"Zahtev za izveštaj"| P103
@@ -851,7 +835,6 @@ graph TD
     D4[("D4: Usluge")]
     D5[("D5: Ordinacije")]
     D6[("D6: Termini")]
-    D9[("D9: Obaveštenja")]
     D12[("D12: Lekar-Usluga")]
     D20[("D20: Radno vreme")]
 
@@ -886,7 +869,6 @@ graph TD
     P416 -->|"Izabrana ordinacija"| P417
 
     P417 -->|"Novi termin"| D6
-    P417 -->|"Obaveštenje o terminu"| D9
     P417 -->|"Potvrda termina"| E3
 ```
 
@@ -1126,8 +1108,8 @@ graph TD
 | E2 | Lekar | Medicinski stručnjak zaposlen u klinici. Unosi nalaze, dijagnoze, terapije. Prima raspored. |
 | E3 | Recepcija / Admin | Administrativno osoblje. Registruje pacijente, zakazuje termine, naplaćuje usluge. |
 | E4 | Menadžer | Rukovodilac klinike. Traži izveštaje i analize performansi. |
-| E5 | Email/SMS Servis | Eksterni servis za slanje obaveštenja. Prima zahtev, vraća status isporuke. |
-| E6 | Fiskalni Sistem | Eksterni sistem za fiskalizaciju. Prima podatke računa, vraća potvrdu. |
+
+> Logički model više ne prikazuje spoljne integracije za poruke ili fiskalizaciju, jer se u trenutnoj implementaciji obaveštenja i naplata obrađuju unutar sistema.
 
 ### 4.2 Skladišta podataka
 
@@ -1160,9 +1142,9 @@ graph TD
 
 | Tok podataka | Izvor | Odredište | Kompozicija |
 |--------------|-------|-----------|-------------|
-| Lični podaci pacijenta | E1 / E3 | P2.1 | Ime + Prezime + JMBG + DatumRodjenja + Pol + Adresa + Telefon + (Email) |
-| Korisnički podaci | E3 | P1.1 | KorisnickoIme + Lozinka + Ime + Prezime + Email + Telefon + Uloga |
-| Zahtev za termin | E3 | P4.1 | PacijentID + UslugaID + LekarID + ZeljeniDatumVreme |
+| Lični podaci pacijenta | E1 / E3 | P2.1 | Ime + Prezime + JMBG + DatumRodjenja + Pol + Adresa + Telefon + (Email) + (BrojOsiguranja) |
+| Korisnički podaci | E3 | P1.1 | KorisnickoIme + Lozinka + Ime + Prezime + Email + Telefon + Uloge |
+| Zahtev za termin | E3 | P4.1 | PacijentID + UslugaID + LekarID + ZeljeniDatumVreme + OrdinacijaID |
 | Potvrda termina | P4.1 | E3 | TerminID + DatumVreme + LekarIme + UslugaNaziv + OrdinacijaNaziv |
 | Podaci lekara | E3 | P3.1 | Ime + Prezime + SpecijalizacijaID + Titula + LicencaBroj + Telefon + Email |
 | Podaci usluge | E3 | P3.2 | Naziv + Opis + TrajanjeMinuta + Cena + SpecijalizacijaID |
@@ -1173,25 +1155,24 @@ graph TD
 | Raspored lekara | P4.2 | E2 | Datum + {DatumVreme + PacijentIme + UslugaNaziv + Ordinacija} |
 | Zahtev za izveštaj | E4 | P8 | TipIzvestaja + DatumOd + DatumDo + (LekarID) + (UslugaID) |
 | Izveštaj za menadžment | P8 | E4 | TipIzvestaja + Period + {StavkaIzvestaja} + Sumarno |
-| Podsetnik pacijentu | P5.1 | E5 | PacijentKontakt + TerminDatumVreme + LekarIme + UslugaNaziv |
+| Interni podsetnik pacijentu | P5.1 | D9 | PacijentID + TerminDatumVreme + LekarIme + UslugaNaziv + Status |
 | Medicinski izveštaj | P6.6 | E1 | IzvestajID + DatumPregleda + LekarIme + Dijagnoza + Zakljucak + Terapija |
 | Promena termina | E3 | P4.4 | TerminID + NoviDatumVreme + RazlogPromene |
 | Otkazivanje termina | E3 | P4.5 | TerminID + StatusOtkazivanja + (Razlog) |
 | Uplata | E3 | P7.2 | RacunID + Iznos + NacinPlacanja |
-| Fiskalni podaci | P7.2 | E6 | BrojRacuna + UkupanIznos + PDV + NacinPlacanja |
-| Status isporuke | E5 | P5 | ObavestenjeID + StatusSlanja + DatumIsporuke |
 | Zahtev sa portala | E1 | P10.2 | PacijentID + ZeljenaUsluga + ZeljeniDatumVreme + (Napomena) |
 | Poruka | E1 | P10.4 | PacijentID + PrimalacTip + Sadrzaj |
 
 ### 4.4 Strukture podataka
 
 ```
-Korisnik = KorisnikID + KorisnickoIme + LozinkaHash + Ime + Prezime 
-         + Email + Telefon + Uloga + Aktivan + DatumKreiranja
+Korisnik = KorisnikID(string) + KorisnickoIme + LozinkaHash + Ime + Prezime 
+         + (Email) + (Telefon) + Aktivan + DatumKreiranja 
+         + (RefreshToken) + (RefreshTokenExpiryTime) + {Uloge preko ASP.NET Identity tabela}
 
 Pacijent = PacijentID + Ime + Prezime + JMBG + DatumRodjenja + Pol 
          + Adresa + Telefon + (Email) + (BrojOsiguranja) + (Napomene) 
-         + DatumRegistracije + Aktivan
+         + JeStudent + JePenzioner + DatumRegistracije + Aktivan + (UserId)
 
 Alergija = AlergijaID + PacijentID + NazivAlergena + (Opis) 
          + Ozbiljnost[blaga | umerena | teška]
@@ -1208,10 +1189,10 @@ LekarUsluga = LekarID + UslugaID
 
 Ordinacija = OrdinacijaID + Naziv + (Lokacija) + (Oprema) + Dostupna
 
-Termin = TerminID + PacijentID + LekarID + UslugaID + OrdinacijaID 
+Termin = TerminID + PacijentID + LekarID + UslugaID + (OrdinacijaID) 
        + DatumVreme + TrajanjeMinuta 
-       + Status[zakazan | realizovan | otkazao_pacijent | otkazala_klinika | nije_se_pojavio] 
-       + (RazlogPromene) + (RazlogOtkazivanja) + KreatorID + DatumKreiranja
+    + Status[zahtev | zakazan | realizovan | otkazao_pacijent | otkazala_klinika | nije_se_pojavio] 
+    + (RazlogPromene) + (RazlogOtkazivanja) + (KreatorID:string) + DatumKreiranja
 
 StavkaListeCekanja = ListaCekanjaID + PacijentID + UslugaID + (LekarID) 
                    + DatumUpisa + Prioritet[nizak | srednji | visok] 
@@ -1233,18 +1214,21 @@ MedicinskiIzvestaj = IzvestajID + PregledID + PacijentID + LekarID
                    + Sadrzaj + DatumKreiranja 
                    + Status[kreiran | potpisan | arhiviran]
 
-Racun = RacunID + PacijentID + BrojRacuna + DatumIzdavanja 
+Racun = RacunID + PacijentID + (TerminID) + BrojRacuna + DatumIzdavanja 
       + UkupanIznos + (PopustProcenat) + IznosZaNaplatu 
       + StatusNaplate[placeno | neplaceno | delimicno] + (Napomena)
 
 StavkaRacuna = StavkaID + RacunID + UslugaID + (PregledID) 
              + JedinicnaCena + Kolicina + (PopustProcenat) + Iznos
 
+RacunPopust = RacunPopustID + RacunID + PopustID + Procenat
+
 Placanje = PlacanjeID + RacunID + Iznos 
          + NacinPlacanja[gotovina | kartica | virman] 
          + DatumPlacanja + (Napomena)
 
-Popust = PopustID + Naziv + Procenat + (VaziOd) + (VaziDo) + Aktivan
+Popust = PopustID + Naziv + Tip[student | penzioner | paket2 | paket3 | opsti | kod]
+    + Procenat + (VaziOd) + (VaziDo) + Aktivan + JeSistemski + (Kod)
 
 Obavestenje = ObavestenjeID + Tip[podsetnik | raspored | kontrola | poruka] 
             + PrimalacTip[pacijent | lekar] + PrimalacID + Sadrzaj 
@@ -1269,6 +1253,8 @@ Dijagnoza = DijagnozaID + Sifra + Naziv + (Opis)
 ---
 
 ## 5. EER Model
+
+> **Implementaciona napomena:** Fizička baza koristi ASP.NET Identity tabele za korisnike, uloge i relacije korisnik-uloga. U EER prikazima ispod to je sažeto kroz logički entitet `KORISNIK`, dok su `AspNetUsers`, `AspNetRoles` i `AspNetUserRoles` izostavljeni radi preglednosti. Dodatno, u implementaciji postoji i spojna tabela računa i popusta (`InvoiceDiscount`), a termin može privremeno biti bez ordinacije kada je status `zahtev`.
 
 ### 5.1 EER dijagram
 
@@ -1554,11 +1540,11 @@ erDiagram
 
 ### 5.2 Specijalizacija / Generalizacija (ISA hijerarhija)
 
-Entitet **KORISNIK** predstavlja generalizaciju sa parcijalnom, preklapajućom specijalizacijom na konkretne uloge. Uloga se određuje atributom `Uloga`, ali specifični podtip **LEKAR** ima sopstvenu tabelu sa dodatnim atributima.
+Entitet **KORISNIK** predstavlja generalizaciju sa parcijalnom, preklapajućom specijalizacijom na konkretne uloge. Uloge se u implementaciji određuju preko ASP.NET Identity relacija korisnik-uloga, dok specifični podtip **LEKAR** ima sopstvenu tabelu sa dodatnim atributima.
 
 ```mermaid
 graph TD
-    K["KORISNIK<br/>(KorisnikID, KorisnickoIme,<br/>LozinkaHash, Ime, Prezime,<br/>Email, Telefon, Uloga, Aktivan)"]
+    K["KORISNIK<br/>(KorisnikID, KorisnickoIme,<br/>LozinkaHash, Ime, Prezime,<br/>Email, Telefon, Aktivan)"]
 
     K -->|"ISA<br/>(parcijalna, preklapajuća)"| L
     K -->|"Uloga = admin"| A
@@ -1566,9 +1552,9 @@ graph TD
     K -->|"Uloga = menadzer"| M
 
     L["LEKAR<br/>(LekarID, KorisnikID FK,<br/>SpecijalizacijaID FK,<br/>Titula, LicencaBroj)"]
-    A["ADMIN<br/>(nema dodatnih atributa —<br/>uloga se čuva u KORISNIK.Uloga)"]
-    R["RECEPCIJA<br/>(nema dodatnih atributa —<br/>uloga se čuva u KORISNIK.Uloga)"]
-    M["MENADŽER<br/>(nema dodatnih atributa —<br/>uloga se čuva u KORISNIK.Uloga)"]
+    A["ADMIN<br/>(nema dodatnih atributa —<br/>uloga se čuva kroz Identity role)"]
+    R["RECEPCIJA<br/>(nema dodatnih atributa —<br/>uloga se čuva kroz Identity role)"]
+    M["MENADŽER<br/>(nema dodatnih atributa —<br/>uloga se čuva kroz Identity role)"]
 
     style K fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
     style L fill:#fff9c4,stroke:#f9a825,stroke-width:2px
@@ -1577,7 +1563,7 @@ graph TD
     style M fill:#f3e5f5,stroke:#7b1fa2
 ```
 
-> **Napomena:** Samo podtip **LEKAR** ima zasebnu tabelu jer poseduje specifične atribute (specijalizacija, titula, licenca). Ostale uloge (`admin`, `recepcija`, `menadzer`) se razlikuju isključivo po pravima pristupa i čuvaju se kao vrednost atributa `Uloga` u tabeli `KORISNIK`.
+> **Napomena:** Samo podtip **LEKAR** ima zasebnu tabelu jer poseduje specifične atribute (specijalizacija, titula, licenca). Ostale uloge (`admin`, `recepcija`, `menadzer`) se razlikuju isključivo po pravima pristupa i čuvaju se kroz ASP.NET Identity role i veze korisnik-uloga.
 
 ### 5.3 Opis entiteta
 
@@ -1619,7 +1605,7 @@ graph TD
 | zakazuje termin | PACIJENT | 1:N | TERMIN | Pacijent može imati više termina |
 | obavlja termin | LEKAR | 1:N | TERMIN | Lekar obavlja više termina |
 | tip pregleda | USLUGA | 1:N | TERMIN | Svaki termin je za jednu uslugu |
-| lokacija | ORDINACIJA | 1:N | TERMIN | Svaki termin je u jednoj ordinaciji |
+| lokacija | ORDINACIJA | 1:N | TERMIN | Zakazani termin je u jednoj ordinaciji, dok zahtev za termin može privremeno biti bez dodeljene ordinacije |
 | realizuje se | TERMIN | 1:0..1 | PREGLED | Termin se realizuje kao najviše jedan pregled |
 | propisuje terapiju | PREGLED | 1:N | TERAPIJA | Pregled može imati više terapija |
 | upućuje | PREGLED | 1:N | UPUCIVANJE | Pregled može imati više upućivanja |
@@ -1934,23 +1920,26 @@ erDiagram
 
 | Kolona | Tip | Ograničenja | Opis |
 |--------|-----|-------------|------|
-| KorisnikID | INT | PK, IDENTITY(1,1) | Primarni ključ, auto-inkrement |
+| KorisnikID | NVARCHAR(450) | PK | Primarni ključ iz ASP.NET Identity sistema |
 | KorisnickoIme | NVARCHAR(50) | NOT NULL, UNIQUE | Jedinstveno korisničko ime |
-| LozinkaHash | NVARCHAR(256) | NOT NULL | Hashirana lozinka (bcrypt/Argon2) |
+| LozinkaHash | NVARCHAR(MAX) | NOT NULL | Hashirana lozinka kroz ASP.NET Identity |
 | Ime | NVARCHAR(50) | NOT NULL | Ime korisnika |
 | Prezime | NVARCHAR(50) | NOT NULL | Prezime korisnika |
-| Email | NVARCHAR(100) | NOT NULL, UNIQUE | Email adresa |
+| Email | NVARCHAR(256) | NULL | Email adresa |
 | Telefon | NVARCHAR(20) | NULL | Kontakt telefon |
-| Uloga | NVARCHAR(20) | NOT NULL, CHECK(IN 'admin','recepcija','lekar','menadzer') | Uloga u sistemu |
 | Aktivan | BIT | NOT NULL, DEFAULT 1 | Da li je nalog aktivan |
-| DatumKreiranja | DATETIME | NOT NULL, DEFAULT GETDATE() | Datum kreiranja naloga |
+| DatumKreiranja | DATETIME | NOT NULL, DEFAULT GETUTCDATE() | Datum kreiranja naloga |
+| RefreshToken | NVARCHAR(MAX) | NULL | Poslednji izdati refresh token |
+| RefreshTokenExpiryTime | DATETIME | NULL | Rok važenja refresh tokena |
+
+> Uloge korisnika (`admin`, `recepcija`, `lekar`, `menadzer`) realizovane su kroz ASP.NET Identity tabele za role i veze korisnik-uloga, a ne kroz posebnu kolonu u tabeli korisnika.
 
 #### LEKAR
 
 | Kolona | Tip | Ograničenja | Opis |
 |--------|-----|-------------|------|
 | LekarID | INT | PK, IDENTITY(1,1) | Primarni ključ |
-| KorisnikID | INT | FK → KORISNIK, NOT NULL, UNIQUE | Veza sa korisničkim nalogom (1:1) |
+| KorisnikID | NVARCHAR(450) | FK → KORISNIK, NOT NULL, UNIQUE | Veza sa korisničkim nalogom (1:1) |
 | SpecijalizacijaID | INT | FK → SPECIJALIZACIJA, NOT NULL | Medicinska specijalizacija |
 | Titula | NVARCHAR(20) | NULL | Titula (dr, prof. dr, itd.) |
 | LicencaBroj | NVARCHAR(30) | NOT NULL, UNIQUE | Broj lekarske licence |
@@ -1979,7 +1968,10 @@ erDiagram
 | Email | NVARCHAR(100) | NULL | Email adresa |
 | BrojOsiguranja | NVARCHAR(50) | NULL | Broj zdravstvenog osiguranja |
 | Napomene | NVARCHAR(500) | NULL | Posebne napomene o pacijentu |
-| DatumRegistracije | DATETIME | NOT NULL, DEFAULT GETDATE() | Datum registracije kartona |
+| JeStudent | BIT | NOT NULL, DEFAULT 0 | Obeležava studenta radi sistemskog popusta |
+| JePenzioner | BIT | NOT NULL, DEFAULT 0 | Obeležava penzionera radi sistemskog popusta |
+| UserId | NVARCHAR(450) | FK → KORISNIK, NULL | Veza sa portal nalogom pacijenta |
+| DatumRegistracije | DATETIME | NOT NULL, DEFAULT GETUTCDATE() | Datum registracije kartona |
 | Aktivan | BIT | NOT NULL, DEFAULT 1 | Da li je karton aktivan |
 
 #### ALERGIJA
@@ -2029,14 +2021,14 @@ erDiagram
 | PacijentID | INT | FK → PACIJENT, NOT NULL | Pacijent za koga je termin |
 | LekarID | INT | FK → LEKAR, NOT NULL | Lekar koji obavlja pregled |
 | UslugaID | INT | FK → USLUGA, NOT NULL | Vrsta usluge/pregleda |
-| OrdinacijaID | INT | FK → ORDINACIJA, NOT NULL | Ordinacija u kojoj se obavlja |
+| OrdinacijaID | INT | FK → ORDINACIJA, NULL | Ordinacija u kojoj se obavlja; može biti prazna za portal zahtev |
 | DatumVreme | DATETIME | NOT NULL | Datum i vreme termina |
 | TrajanjeMinuta | INT | NOT NULL | Trajanje u minutima |
-| Status | NVARCHAR(30) | NOT NULL, DEFAULT 'zakazan', CHECK(IN 'zakazan','realizovan','otkazao_pacijent','otkazala_klinika','nije_se_pojavio') | Status termina |
+| Status | NVARCHAR(30) | NOT NULL, DEFAULT 'zakazan', CHECK(IN 'zahtev','zakazan','realizovan','otkazao_pacijent','otkazala_klinika','nije_se_pojavio') | Status termina |
 | RazlogPromene | NVARCHAR(500) | NULL | Razlog za promenu termina |
 | RazlogOtkazivanja | NVARCHAR(500) | NULL | Razlog za otkazivanje |
-| KreatorID | INT | FK → KORISNIK, NOT NULL | Ko je zakazao termin |
-| DatumKreiranja | DATETIME | NOT NULL, DEFAULT GETDATE() | Kada je termin kreiran |
+| KreatorID | NVARCHAR(450) | FK → KORISNIK, NULL | Korisnik koji je zakazao termin |
+| DatumKreiranja | DATETIME | NOT NULL, DEFAULT GETUTCDATE() | Kada je termin kreiran |
 
 #### LISTA_CEKANJA
 
@@ -2108,8 +2100,9 @@ erDiagram
 |--------|-----|-------------|------|
 | RacunID | INT | PK, IDENTITY(1,1) | Primarni ključ |
 | PacijentID | INT | FK → PACIJENT, NOT NULL | Pacijent na koga glasi račun |
+| TerminID | INT | FK → TERMIN, NULL, UNIQUE | Termin za koji je račun formiran |
 | BrojRacuna | NVARCHAR(30) | NOT NULL, UNIQUE | Jedinstveni broj računa |
-| DatumIzdavanja | DATETIME | NOT NULL, DEFAULT GETDATE() | Datum izdavanja |
+| DatumIzdavanja | DATETIME | NOT NULL, DEFAULT GETUTCDATE() | Datum izdavanja |
 | UkupanIznos | DECIMAL(12,2) | NOT NULL | Ukupan iznos pre popusta |
 | PopustProcenat | DECIMAL(5,2) | NULL, DEFAULT 0 | Procenat popusta |
 | IznosZaNaplatu | DECIMAL(12,2) | NOT NULL | Iznos za naplatu (posle popusta) |
@@ -2146,10 +2139,22 @@ erDiagram
 |--------|-----|-------------|------|
 | PopustID | INT | PK, IDENTITY(1,1) | Primarni ključ |
 | Naziv | NVARCHAR(100) | NOT NULL | Naziv popusta/akcije |
+| Tip | NVARCHAR(20) | NOT NULL, DEFAULT 'opsti' | Tip popusta (`student`, `penzioner`, `paket2`, `paket3`, `opsti`, `kod`) |
 | Procenat | DECIMAL(5,2) | NOT NULL, CHECK(BETWEEN 0 AND 100) | Procenat popusta |
 | VaziOd | DATE | NULL | Datum početka važenja |
 | VaziDo | DATE | NULL | Datum kraja važenja |
+| JeSistemski | BIT | NOT NULL, DEFAULT 0 | Označava sistemski popust koji se ne briše |
+| Kod | NVARCHAR(50) | NULL, UNIQUE | Promo kod kada je `Tip = 'kod'` |
 | Aktivan | BIT | NOT NULL, DEFAULT 1 | Da li je popust aktivan |
+
+#### RACUN_POPUST
+
+| Kolona | Tip | Ograničenja | Opis |
+|--------|-----|-------------|------|
+| RacunPopustID | INT | PK, IDENTITY(1,1) | Primarni ključ veze računa i popusta |
+| RacunID | INT | FK → RACUN, NOT NULL | Račun na koji je popust primenjen |
+| PopustID | INT | FK → POPUST, NOT NULL | Primenjeni popust |
+| Procenat | DECIMAL(5,2) | NOT NULL | Sačuvana vrednost procenta u trenutku obračuna |
 
 #### OBAVESTENJE
 
@@ -2169,13 +2174,13 @@ erDiagram
 | Kolona | Tip | Ograničenja | Opis |
 |--------|-----|-------------|------|
 | LogID | INT | PK, IDENTITY(1,1) | Primarni ključ |
-| KorisnikID | INT | FK → KORISNIK, NOT NULL | Korisnik koji je izvršio akciju |
+| KorisnikID | NVARCHAR(450) | FK → KORISNIK, NULL | Korisnik koji je izvršio akciju |
 | Akcija | NVARCHAR(30) | NOT NULL | Tip akcije (kreiranje, izmena, brisanje, prijava, odjava) |
 | Tabela | NVARCHAR(100) | NOT NULL | Naziv tabele nad kojom je akcija |
 | EntitetID | INT | NULL | ID entiteta nad kojim je akcija |
 | StareVrednosti | NVARCHAR(MAX) | NULL | JSON stare vrednosti (pre izmene) |
 | NoveVrednosti | NVARCHAR(MAX) | NULL | JSON nove vrednosti (posle izmene) |
-| DatumVreme | DATETIME | NOT NULL, DEFAULT GETDATE() | Datum i vreme akcije |
+| DatumVreme | DATETIME | NOT NULL, DEFAULT GETUTCDATE() | Datum i vreme akcije |
 | IPAdresa | NVARCHAR(45) | NULL | IP adresa korisnika |
 
 #### RADNO_VREME
@@ -2225,6 +2230,7 @@ erDiagram
 |-----------|--------|--------|-------------|-----------|-----------|
 | FK_Lekar_Korisnik | LEKAR | KorisnikID | KORISNIK(KorisnikID) | CASCADE | CASCADE |
 | FK_Lekar_Specijalizacija | LEKAR | SpecijalizacijaID | SPECIJALIZACIJA(SpecijalizacijaID) | RESTRICT | CASCADE |
+| FK_Pacijent_Korisnik | PACIJENT | UserId | KORISNIK(KorisnikID) | SET NULL | CASCADE |
 | FK_Alergija_Pacijent | ALERGIJA | PacijentID | PACIJENT(PacijentID) | CASCADE | CASCADE |
 | FK_Usluga_Specijalizacija | USLUGA | SpecijalizacijaID | SPECIJALIZACIJA(SpecijalizacijaID) | RESTRICT | CASCADE |
 | FK_LekarUsluga_Lekar | LEKAR_USLUGA | LekarID | LEKAR(LekarID) | CASCADE | CASCADE |
@@ -2233,7 +2239,7 @@ erDiagram
 | FK_Termin_Lekar | TERMIN | LekarID | LEKAR(LekarID) | RESTRICT | CASCADE |
 | FK_Termin_Usluga | TERMIN | UslugaID | USLUGA(UslugaID) | RESTRICT | CASCADE |
 | FK_Termin_Ordinacija | TERMIN | OrdinacijaID | ORDINACIJA(OrdinacijaID) | RESTRICT | CASCADE |
-| FK_Termin_Kreator | TERMIN | KreatorID | KORISNIK(KorisnikID) | RESTRICT | CASCADE |
+| FK_Termin_Kreator | TERMIN | KreatorID | KORISNIK(KorisnikID) | SET NULL | CASCADE |
 | FK_ListaCekanja_Pacijent | LISTA_CEKANJA | PacijentID | PACIJENT(PacijentID) | CASCADE | CASCADE |
 | FK_ListaCekanja_Usluga | LISTA_CEKANJA | UslugaID | USLUGA(UslugaID) | RESTRICT | CASCADE |
 | FK_ListaCekanja_Lekar | LISTA_CEKANJA | LekarID | LEKAR(LekarID) | SET NULL | CASCADE |
@@ -2247,12 +2253,15 @@ erDiagram
 | FK_MedIzvestaj_Pacijent | MEDICINSKI_IZVESTAJ | PacijentID | PACIJENT(PacijentID) | RESTRICT | CASCADE |
 | FK_MedIzvestaj_Lekar | MEDICINSKI_IZVESTAJ | LekarID | LEKAR(LekarID) | RESTRICT | CASCADE |
 | FK_Racun_Pacijent | RACUN | PacijentID | PACIJENT(PacijentID) | RESTRICT | CASCADE |
+| FK_Racun_Termin | RACUN | TerminID | TERMIN(TerminID) | SET NULL | CASCADE |
 | FK_StavkaRacuna_Racun | STAVKA_RACUNA | RacunID | RACUN(RacunID) | CASCADE | CASCADE |
 | FK_StavkaRacuna_Usluga | STAVKA_RACUNA | UslugaID | USLUGA(UslugaID) | RESTRICT | CASCADE |
 | FK_StavkaRacuna_Pregled | STAVKA_RACUNA | PregledID | PREGLED(PregledID) | SET NULL | CASCADE |
 | FK_Placanje_Racun | PLACANJE | RacunID | RACUN(RacunID) | RESTRICT | CASCADE |
+| FK_RacunPopust_Racun | RACUN_POPUST | RacunID | RACUN(RacunID) | CASCADE | CASCADE |
+| FK_RacunPopust_Popust | RACUN_POPUST | PopustID | POPUST(PopustID) | RESTRICT | CASCADE |
 | FK_Obavestenje_Termin | OBAVESTENJE | TerminID | TERMIN(TerminID) | SET NULL | CASCADE |
-| FK_Log_Korisnik | LOG_AKTIVNOSTI | KorisnikID | KORISNIK(KorisnikID) | RESTRICT | CASCADE |
+| FK_Log_Korisnik | LOG_AKTIVNOSTI | KorisnikID | KORISNIK(KorisnikID) | SET NULL | CASCADE |
 | FK_RadnoVreme_Lekar | RADNO_VREME | LekarID | LEKAR(LekarID) | CASCADE | CASCADE |
 
 ### 6.4 Indeksi
@@ -2278,5 +2287,5 @@ Za optimizaciju performansi, preporučuju se sledeći dodatni indeksi:
 ---
 
 > **Dokument kreiran:** mart 2026.
-> **Tehnologija:** Angular + ASP.NET Core + SQL Server
-> **Verzija:** 1.0
+> **Tehnologija:** Angular 21 + ASP.NET Core .NET 10 + SQL Server
+> **Verzija:** 1.1

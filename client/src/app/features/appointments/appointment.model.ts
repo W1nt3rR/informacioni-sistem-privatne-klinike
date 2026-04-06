@@ -6,7 +6,7 @@ export interface AppointmentListItem {
   lekarIme: string;
   serviceId: number;
   uslugaNaziv: string;
-  officeId: number;
+  officeId: number | null;
   ordinacijaNaziv: string;
   datumVreme: string;
   trajanjeMinuta: number;
@@ -36,6 +36,14 @@ export interface RescheduleRequest {
 
 export interface CancelRequest {
   status: string;
+  razlogOtkazivanja: string | null;
+}
+
+export interface ApproveRequest {
+  officeId: number;
+}
+
+export interface RejectRequest {
   razlogOtkazivanja: string | null;
 }
 
