@@ -85,6 +85,78 @@ public class PortalController(
         return Ok(new { message = "Registracija uspešna." });
     }
 
+    // ─── Dashboard ───────────────────────────────────────────────────
+    [HttpGet("dashboard")]
+    [Authorize(Roles = "pacijent")]
+    public async Task<IActionResult> Dashboard()
+    {
+        var patient = await GetCurrentPatient();
+        if (patient is null) return NotFound(new { message = "Pacijent nije pronađen." });
+
+        var now = DateTime.UtcNow;
+
+        var appointments = await db.Appointments
+            .Include(a => a.Service)
+            .Include(a => a.Doctor).ThenInclude(d => d.User)
+            .Where(a => a.PatientId == patient.PatientId)
+            .ToListAsync();
+
+        var upcoming = appointments.Where(a => a.DatumVreme >= now && a.Status is "zakazan" or "zahtev").ToList();
+        var past = appointments.Where(a => a.DatumVreme < now).ToList();
+
+        var nextAppointment = upcoming
+            .OrderBy(a => a.DatumVreme)
+            .Select(a => new
+            {
+                a.AppointmentId,
+                ServiceName = a.Service.Naziv,
+                DoctorName = $"{a.Doctor.User.Ime} {a.Doctor.User.Prezime}",
+                a.DatumVreme,
+                a.Status
+            })
+            .FirstOrDefault();
+
+        var invoices = await db.Invoices
+            .Include(i => i.Payments)
+            .Where(i => i.PatientId == patient.PatientId)
+            .ToListAsync();
+
+        var unpaid = invoices.Where(i => i.StatusNaplate != "placeno").ToList();
+
+        var recentInvoices = unpaid
+            .OrderByDescending(i => i.DatumIzdavanja)
+            .Take(5)
+            .Select(i => new
+            {
+                i.InvoiceId,
+                i.BrojRacuna,
+                i.IznosZaNaplatu,
+                i.StatusNaplate,
+                i.DatumIzdavanja
+            })
+            .ToList();
+
+        var totalDebt = unpaid.Sum(i => i.IznosZaNaplatu - i.Payments.Sum(p => p.Iznos));
+
+        var reportsCount = await db.MedicalReports
+            .CountAsync(r => r.PatientId == patient.PatientId);
+
+        var unreadMessages = await db.Messages
+            .CountAsync(m => m.PrimalacTip == "pacijent" && m.PrimalacId == patient.PatientId && !m.Procitana);
+
+        return Ok(new
+        {
+            UpcomingAppointments = upcoming.Count,
+            PastAppointments = past.Count,
+            UnpaidInvoices = unpaid.Count,
+            TotalDebt = totalDebt,
+            ReportsCount = reportsCount,
+            UnreadMessages = unreadMessages,
+            NextAppointment = nextAppointment,
+            RecentInvoices = recentInvoices
+        });
+    }
+
     // ─── My Appointments ─────────────────────────────────────────────
     [HttpGet("appointments")]
     [Authorize(Roles = "pacijent")]

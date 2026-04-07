@@ -1,73 +1,176 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
+import { ThemeService } from '../../shared/services/theme.service';
+import { SettingsDialogComponent } from '../../shared/components/settings-dialog.component';
 import { ChangePasswordDialogComponent } from '../../core/auth/change-password-dialog.component';
+
+interface NavItem {
+  label: string;
+  icon: string;
+  route: string;
+}
+
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
 
 @Component({
   selector: 'app-portal-layout',
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="min-h-screen bg-base-200">
-      <div class="navbar bg-primary text-primary-content">
-        <div class="flex-none">
-          <span class="material-icons mr-2">local_hospital</span>
-          <span class="font-semibold text-lg">Portal pacijenta</span>
+    <div class="flex h-screen overflow-hidden bg-base-200">
+      <!-- Sidebar -->
+      <aside
+        class="flex flex-col shrink-0 bg-neutral text-neutral-content transition-all duration-300 overflow-hidden"
+        [class.w-64]="sidenavOpened()"
+        [class.w-16]="!sidenavOpened()"
+      >
+        <!-- Sidebar Header -->
+        <div class="flex items-center h-16 px-4">
+          <span class="material-icons text-primary mr-2">local_hospital</span>
+          @if (sidenavOpened()) {
+            <span class="font-semibold text-lg whitespace-nowrap">Portal pacijenta</span>
+          }
         </div>
 
-        <nav class="ml-8 flex gap-1">
-          <a routerLink="/portal/appointments" routerLinkActive="bg-primary-focus"
-             class="btn btn-ghost btn-sm">
-            <span class="material-icons text-sm">calendar_today</span> Termini
-          </a>
-          <a routerLink="/portal/reports" routerLinkActive="bg-primary-focus"
-             class="btn btn-ghost btn-sm">
-            <span class="material-icons text-sm">description</span> Nalazi
-          </a>
-          <a routerLink="/portal/messages" routerLinkActive="bg-primary-focus"
-             class="btn btn-ghost btn-sm">
-            <span class="material-icons text-sm">mail</span> Poruke
-          </a>
-          <a routerLink="/portal/invoices" routerLinkActive="bg-primary-focus"
-             class="btn btn-ghost btn-sm">
-            <span class="material-icons text-sm">receipt_long</span> Računi
-          </a>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto overflow-x-hidden py-2">
+          @for (group of navGroups; track group.title) {
+            @if (sidenavOpened()) {
+              <div class="px-4 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider opacity-60">
+                {{ group.title }}
+              </div>
+            }
+            @for (item of group.items; track item.route) {
+              <a
+                [routerLink]="item.route"
+                routerLinkActive="bg-primary/20 text-primary"
+                class="flex items-center gap-3 px-4 py-2.5 opacity-80 hover:bg-base-content/10 hover:opacity-100 transition-colors cursor-pointer no-underline"
+                [class.justify-center]="!sidenavOpened()"
+                [class.tooltip]="!sidenavOpened()"
+                [class.tooltip-right]="!sidenavOpened()"
+                [attr.data-tip]="!sidenavOpened() ? item.label : null"
+              >
+                <span class="material-icons text-xl">{{ item.icon }}</span>
+                @if (sidenavOpened()) {
+                  <span class="text-sm whitespace-nowrap">{{ item.label }}</span>
+                }
+              </a>
+            }
+          }
         </nav>
+      </aside>
 
-        <div class="flex-1"></div>
-
-        <div class="dropdown dropdown-end">
-          <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
-            <span class="material-icons">account_circle</span>
+      <!-- Main Content Area -->
+      <div class="flex flex-col flex-1 overflow-hidden">
+        <!-- Top Header -->
+        <header class="navbar bg-base-100 border-b border-base-300 shadow-sm px-4 min-h-16">
+          <div class="flex-1 flex items-center gap-2">
+            <button class="btn btn-ghost btn-sm btn-square" (click)="toggleSidenav()">
+              <span class="material-icons">menu</span>
+            </button>
+            <h1 class="text-lg font-medium m-0">Portal pacijenta</h1>
           </div>
-          <ul tabindex="0" class="dropdown-content menu bg-base-100 text-base-content rounded-box z-10 w-56 p-2 shadow">
-            <li class="disabled"><a class="text-base-content/60">
-              <span class="material-icons text-sm">person</span>
-              {{ user()?.ime }} {{ user()?.prezime }}
-            </a></li>
-            <li><a (click)="openChangePassword()">
-              <span class="material-icons text-sm">lock_reset</span>
-              Promeni lozinku
-            </a></li>
-            <li><a (click)="logout()">
-              <span class="material-icons text-sm">logout</span>
-              Odjavi se
-            </a></li>
-          </ul>
-        </div>
-      </div>
 
-      <main class="max-w-5xl mx-auto p-6">
-        <router-outlet />
-      </main>
+          <div class="flex items-center gap-1">
+            <div class="tooltip tooltip-bottom" data-tip="Režim teme">
+              <button class="btn btn-ghost btn-sm btn-square" (click)="toggleMode()">
+                <span class="material-icons">
+                  @switch (themeService.config().mode) {
+                    @case ('light') { light_mode }
+                    @case ('dark') { dark_mode }
+                    @case ('system') { contrast }
+                  }
+                </span>
+              </button>
+            </div>
+            <div class="tooltip tooltip-bottom" data-tip="Podešavanja teme">
+              <button class="btn btn-ghost btn-sm btn-square" (click)="openSettings()">
+                <span class="material-icons">palette</span>
+              </button>
+            </div>
+            <div class="dropdown dropdown-end">
+              <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-square">
+                <span class="material-icons">account_circle</span>
+              </div>
+              @if (user()) {
+                <span class="text-sm opacity-70 hidden sm:inline ml-1">{{ user()!.ime }} {{ user()!.prezime }}</span>
+              }
+              <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box shadow-lg w-52 z-50 mt-2">
+                <li class="disabled"><a><span class="material-icons text-base">person</span>{{ user()?.userName }}</a></li>
+                <li><a (click)="openChangePassword()"><span class="material-icons text-base">lock_reset</span>Promeni lozinku</a></li>
+                <li><a (click)="logout()"><span class="material-icons text-base">logout</span>Odjavi se</a></li>
+              </ul>
+            </div>
+          </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="flex-1 overflow-y-auto p-6">
+          <router-outlet />
+        </main>
+      </div>
     </div>
   `,
+  styles: [`:host { display: block; height: 100%; }`],
 })
 export class PortalLayoutComponent {
   private authService = inject(AuthService);
   private dialog = inject(DialogService);
+  themeService = inject(ThemeService);
+
+  sidenavOpened = signal(true);
   user = this.authService.user;
+
+  navGroups: NavGroup[] = [
+    {
+      title: 'Početna',
+      items: [
+        { label: 'Kontrolna tabla', icon: 'dashboard', route: '/portal/dashboard' },
+      ],
+    },
+    {
+      title: 'Zakazivanje',
+      items: [
+        { label: 'Moji termini', icon: 'calendar_today', route: '/portal/appointments' },
+        { label: 'Novi zahtev', icon: 'add_circle_outline', route: '/portal/request-appointment' },
+      ],
+    },
+    {
+      title: 'Zdravlje',
+      items: [
+        { label: 'Nalazi', icon: 'description', route: '/portal/reports' },
+      ],
+    },
+    {
+      title: 'Finansije',
+      items: [
+        { label: 'Računi', icon: 'receipt_long', route: '/portal/invoices' },
+      ],
+    },
+    {
+      title: 'Komunikacija',
+      items: [
+        { label: 'Poruke', icon: 'mail', route: '/portal/messages' },
+      ],
+    },
+  ];
+
+  toggleSidenav(): void {
+    this.sidenavOpened.update(v => !v);
+  }
+
+  toggleMode(): void {
+    this.themeService.toggleMode();
+  }
+
+  openSettings(): void {
+    this.dialog.open(SettingsDialogComponent);
+  }
 
   openChangePassword(): void {
     this.dialog.open(ChangePasswordDialogComponent);

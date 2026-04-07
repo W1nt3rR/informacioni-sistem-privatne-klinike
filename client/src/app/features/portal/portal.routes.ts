@@ -6,7 +6,11 @@ export const PORTAL_ROUTES: Routes = [
     path: '',
     component: PortalLayoutComponent,
     children: [
-      { path: '', redirectTo: 'appointments', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./portal-dashboard.component').then(m => m.PortalDashboardComponent),
+      },
       {
         path: 'appointments',
         loadComponent: () => import('./my-appointments.component').then(m => m.MyAppointmentsComponent),
