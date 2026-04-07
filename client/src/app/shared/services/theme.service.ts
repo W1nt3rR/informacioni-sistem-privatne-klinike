@@ -26,12 +26,12 @@ const DEFAULT_CONFIG: ThemeConfig = { light: 'light', dark: 'dark', mode: 'syste
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
-  config = signal<ThemeConfig>(this.load());
-  activeTheme = signal(this.resolveTheme(this.load()));
-
   private mediaQuery = typeof window !== 'undefined'
     ? window.matchMedia('(prefers-color-scheme: dark)')
     : null;
+
+  config = signal<ThemeConfig>(this.load());
+  activeTheme = signal(this.resolveTheme(this.load()));
 
   constructor() {
     this.apply(this.activeTheme());
