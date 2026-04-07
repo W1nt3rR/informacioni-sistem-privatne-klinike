@@ -96,7 +96,7 @@ public class PortalController(
         var now = DateTime.UtcNow;
 
         var appointments = await db.Appointments
-            .Include(a => a.Service)
+            .Include(a => a.AppointmentServices).ThenInclude(aps => aps.Service)
             .Include(a => a.Doctor).ThenInclude(d => d.User)
             .Where(a => a.PatientId == patient.PatientId)
             .ToListAsync();
@@ -109,7 +109,7 @@ public class PortalController(
             .Select(a => new
             {
                 a.AppointmentId,
-                ServiceName = a.Service.Naziv,
+                ServiceName = string.Join(", ", a.AppointmentServices.Select(aps => aps.Service.Naziv)),
                 DoctorName = $"{a.Doctor.User.Ime} {a.Doctor.User.Prezime}",
                 a.DatumVreme,
                 a.Status
@@ -165,19 +165,20 @@ public class PortalController(
         var patient = await GetCurrentPatient();
         if (patient is null) return NotFound(new { message = "Pacijent nije pronađen." });
 
-        var appointments = await db.Appointments
-            .Include(a => a.Service)
+        var list = await db.Appointments
+            .Include(a => a.AppointmentServices).ThenInclude(aps => aps.Service)
             .Include(a => a.Doctor).ThenInclude(d => d.User)
             .Where(a => a.PatientId == patient.PatientId)
             .OrderByDescending(a => a.DatumVreme)
-            .Select(a => new PortalAppointmentResponse(
-                a.AppointmentId,
-                a.Service.Naziv,
-                $"{a.Doctor.User.Ime} {a.Doctor.User.Prezime}",
-                a.DatumVreme,
-                a.TrajanjeMinuta,
-                a.Status))
             .ToListAsync();
+
+        var appointments = list.Select(a => new PortalAppointmentResponse(
+            a.AppointmentId,
+            string.Join(", ", a.AppointmentServices.Select(aps => aps.Service.Naziv)),
+            $"{a.Doctor.User.Ime} {a.Doctor.User.Prezime}",
+            a.DatumVreme,
+            a.TrajanjeMinuta,
+            a.Status)).ToList();
 
         return appointments;
     }
@@ -190,8 +191,13 @@ public class PortalController(
         var patient = await GetCurrentPatient();
         if (patient is null) return NotFound(new { message = "Pacijent nije pronađen." });
 
-        var service = await db.Services.FindAsync(req.ServiceId);
-        if (service is null) return BadRequest(new { message = "Usluga nije pronađena." });
+        var distinctIds = req.ServiceIds.Distinct().ToList();
+        if (distinctIds.Count == 0)
+            return BadRequest(new { message = "Morate odabrati barem jednu uslugu." });
+
+        var services = await db.Services.Where(s => distinctIds.Contains(s.ServiceId)).ToListAsync();
+        if (services.Count != distinctIds.Count)
+            return BadRequest(new { message = "Jedna ili više usluga nije pronađena." });
 
         var doctor = await db.Doctors.FindAsync(req.DoctorId);
         if (doctor is null) return BadRequest(new { message = "Lekar nije pronađen." });
@@ -206,15 +212,19 @@ public class PortalController(
         {
             PatientId = patient.PatientId,
             DoctorId = req.DoctorId,
-            ServiceId = req.ServiceId,
+            ServiceId = distinctIds[0],
             DatumVreme = req.DatumVreme,
-            TrajanjeMinuta = service.TrajanjeMinuta,
+            TrajanjeMinuta = services.Sum(s => s.TrajanjeMinuta),
             Status = "zahtev",
             RazlogPromene = req.Napomena,
             CreatorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!
         };
 
         db.Appointments.Add(appointment);
+        await db.SaveChangesAsync();
+
+        foreach (var svcId in distinctIds)
+            appointment.AppointmentServices.Add(new AppointmentService { ServiceId = svcId });
         await db.SaveChangesAsync();
 
         return Ok(new { message = "Zahtev za termin je uspešno poslat.", appointmentId = appointment.AppointmentId });

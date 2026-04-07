@@ -25,13 +25,17 @@ interface DoctorOption { doctorId: number; ime: string; prezime: string; }
 
           <form #form="ngForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
             <fieldset class="fieldset">
-              <legend class="fieldset-legend">Usluga</legend>
-              <select class="select w-full" [(ngModel)]="model.serviceId" name="serviceId" required>
-                <option [ngValue]="null" disabled>Izaberite uslugu</option>
+              <legend class="fieldset-legend">Usluge</legend>
+              <div class="max-h-48 overflow-y-auto border border-base-300 rounded-lg p-2 space-y-1">
                 @for (s of services(); track s.serviceId) {
-                  <option [ngValue]="s.serviceId">{{ s.naziv }}</option>
+                  <label class="flex items-center gap-2 cursor-pointer hover:bg-base-200 rounded px-1">
+                    <input type="checkbox" class="checkbox checkbox-sm"
+                           [checked]="selectedServiceIds().includes(s.serviceId)"
+                           (change)="toggleService(s.serviceId)" />
+                    <span class="text-sm">{{ s.naziv }}</span>
+                  </label>
                 }
-              </select>
+              </div>
             </fieldset>
 
             <fieldset class="fieldset">
@@ -61,7 +65,7 @@ interface DoctorOption { doctorId: number; ime: string; prezime: string; }
 
             <div class="flex gap-3 justify-end">
               <button type="button" class="btn" (click)="goBack()">Otkaži</button>
-              <button type="submit" class="btn btn-primary" [disabled]="!form.valid || loading()">
+              <button type="submit" class="btn btn-primary" [disabled]="!form.valid || loading() || selectedServiceIds().length === 0">
                 {{ loading() ? 'Slanje zahteva...' : 'Pošalji zahtev' }}
               </button>
             </div>
@@ -79,9 +83,9 @@ export class RequestAppointmentComponent implements OnInit {
   doctors = signal<DoctorOption[]>([]);
   loading = signal(false);
   errorMessage = signal('');
+  selectedServiceIds = signal<number[]>([]);
 
   model = {
-    serviceId: null as number | null,
     doctorId: null as number | null,
     datum: '',
     vreme: '',
@@ -93,8 +97,17 @@ export class RequestAppointmentComponent implements OnInit {
     this.api.get<DoctorOption[]>('doctors').subscribe(d => this.doctors.set(d));
   }
 
+  toggleService(id: number): void {
+    const current = this.selectedServiceIds();
+    if (current.includes(id)) {
+      this.selectedServiceIds.set(current.filter(x => x !== id));
+    } else {
+      this.selectedServiceIds.set([...current, id]);
+    }
+  }
+
   onSubmit(): void {
-    if (!this.model.datum || !this.model.vreme) return;
+    if (!this.model.datum || !this.model.vreme || this.selectedServiceIds().length === 0) return;
     this.loading.set(true);
     this.errorMessage.set('');
 
@@ -103,7 +116,7 @@ export class RequestAppointmentComponent implements OnInit {
     const localIso = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}:00`;
 
     this.api.post('portal/appointment-requests', {
-      serviceId: this.model.serviceId,
+      serviceIds: this.selectedServiceIds(),
       doctorId: this.model.doctorId,
       datumVreme: localIso,
       napomena: this.model.napomena || null,

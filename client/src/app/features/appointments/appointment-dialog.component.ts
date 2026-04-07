@@ -44,13 +44,17 @@ export interface AppointmentDialogData {
           </select>
         </fieldset>
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Usluga</legend>
-          <select class="select w-full" formControlName="serviceId" (change)="onDoctorOrDateChange()">
-            <option [value]="0" disabled>Izaberite</option>
+          <legend class="fieldset-legend">Usluge</legend>
+          <div class="max-h-40 overflow-y-auto border border-base-300 rounded-lg p-2 space-y-1">
             @for (s of services(); track s.serviceId) {
-              <option [value]="s.serviceId">{{ s.naziv }} ({{ s.trajanjeMinuta }} min)</option>
+              <label class="flex items-center gap-2 cursor-pointer hover:bg-base-200 rounded px-1">
+                <input type="checkbox" class="checkbox checkbox-sm"
+                       [checked]="selectedServiceIds().includes(s.serviceId)"
+                       (change)="toggleService(s.serviceId)" />
+                <span class="text-sm">{{ s.naziv }} ({{ s.trajanjeMinuta }} min)</span>
+              </label>
             }
-          </select>
+          </div>
         </fieldset>
       </div>
 
@@ -87,14 +91,14 @@ export interface AppointmentDialogData {
           </div>
         </div>
       }
-      @if (slotsLoaded() && slots().length === 0 && form.value.doctorId && form.value.serviceId && form.value.date) {
+      @if (slotsLoaded() && slots().length === 0 && form.value.doctorId && selectedServiceIds().length > 0 && form.value.date) {
         <div class="text-warning text-sm mt-2">Nema slobodnih termina za odabrani dan.</div>
       }
 
       <div class="modal-action">
         <button class="btn" type="button" (click)="dialogRef.close()">Otkaži</button>
         <button class="btn btn-primary" type="submit"
-                [disabled]="!form.valid || !selectedSlot()">
+                [disabled]="!form.valid || !selectedSlot() || selectedServiceIds().length === 0">
           Zakaži
         </button>
       </div>
@@ -116,13 +120,13 @@ export class AppointmentDialogComponent implements OnInit {
   slotsLoaded = signal(false);
   selectedPatientName = signal('');
   selectedSlot = signal<string | null>(null);
+  selectedServiceIds = signal<number[]>([]);
   today = new Date().toISOString().slice(0, 10);
   private search$ = new Subject<string>();
 
   form = this.fb.nonNullable.group({
     patientId: [0, [Validators.required, Validators.min(1)]],
     doctorId: [0, [Validators.required, Validators.min(1)]],
-    serviceId: [0, [Validators.required, Validators.min(1)]],
     officeId: [0, [Validators.required, Validators.min(1)]],
     date: [this.data?.date ?? '', Validators.required],
   });
@@ -160,13 +164,24 @@ export class AppointmentDialogComponent implements OnInit {
     this.selectedSlot.set(slot.vremeOd);
   }
 
+  toggleService(id: number): void {
+    const current = this.selectedServiceIds();
+    if (current.includes(id)) {
+      this.selectedServiceIds.set(current.filter(x => x !== id));
+    } else {
+      this.selectedServiceIds.set([...current, id]);
+    }
+    this.onDoctorOrDateChange();
+  }
+
   onDoctorOrDateChange(): void {
     this.selectedSlot.set(null);
     this.slotsLoaded.set(false);
-    const { doctorId, serviceId, officeId, date } = this.form.getRawValue();
-    if (doctorId && serviceId && officeId && date) {
+    const { doctorId, officeId, date } = this.form.getRawValue();
+    const svcIds = this.selectedServiceIds();
+    if (doctorId && svcIds.length > 0 && officeId && date) {
       this.api.get<AvailableSlot[]>(
-        `appointments/available-slots?doctorId=${doctorId}&serviceId=${serviceId}&date=${date}&officeId=${officeId}`
+        `appointments/available-slots?doctorId=${doctorId}&serviceIds=${svcIds.join(',')}&date=${date}&officeId=${officeId}`
       ).subscribe(s => {
         this.slots.set(s);
         this.slotsLoaded.set(true);
@@ -179,7 +194,8 @@ export class AppointmentDialogComponent implements OnInit {
   save(): void {
     const val = this.form.getRawValue();
     const slot = this.selectedSlot();
-    if (!slot || !val.date) return;
+    const svcIds = this.selectedServiceIds();
+    if (!slot || !val.date || svcIds.length === 0) return;
 
     const [h, m] = slot.split(':').map(Number);
     const d = new Date(val.date);
@@ -191,7 +207,7 @@ export class AppointmentDialogComponent implements OnInit {
     const body: CreateAppointmentRequest = {
       patientId: val.patientId,
       doctorId: val.doctorId,
-      serviceId: val.serviceId,
+      serviceIds: svcIds,
       officeId: val.officeId,
       datumVreme: localIso,
     };

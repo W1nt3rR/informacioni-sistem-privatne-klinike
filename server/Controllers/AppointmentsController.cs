@@ -24,6 +24,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
             .Include(a => a.Service)
             .Include(a => a.Office)
             .Include(a => a.Examination)
+            .Include(a => a.AppointmentServices).ThenInclude(aps => aps.Service)
             .AsQueryable();
 
         if (from.HasValue) query = query.Where(a => a.DatumVreme >= from.Value);
@@ -32,17 +33,25 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         if (officeId.HasValue) query = query.Where(a => a.OfficeId == officeId.Value);
         if (!string.IsNullOrEmpty(status)) query = query.Where(a => a.Status == status);
 
-        var list = await query.OrderBy(a => a.DatumVreme).Select(a => new AppointmentListResponse(
+        var appointments = await query.OrderBy(a => a.DatumVreme).ToListAsync();
+
+        var list = appointments.Select(a => new AppointmentListResponse(
             a.AppointmentId, a.PatientId,
             a.Patient.Ime + " " + a.Patient.Prezime,
             a.DoctorId,
             a.Doctor.User.Ime + " " + a.Doctor.User.Prezime,
-            a.ServiceId, a.Service.Naziv,
+            a.ServiceId,
+            a.AppointmentServices.Count > 0
+                ? string.Join(", ", a.AppointmentServices.Select(s => s.Service.Naziv))
+                : a.Service.Naziv,
             a.OfficeId,
             a.Office != null ? a.Office.Naziv : "—",
             a.DatumVreme, a.TrajanjeMinuta, a.Status,
-            a.Examination != null ? a.Examination.ExaminationId : null
-        )).ToListAsync();
+            a.Examination != null ? a.Examination.ExaminationId : null,
+            a.AppointmentServices.Count > 0
+                ? a.AppointmentServices.Select(s => s.ServiceId).ToList()
+                : [a.ServiceId]
+        )).ToList();
 
         return Ok(list);
     }
@@ -56,6 +65,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
             .Include(a => a.Service)
             .Include(a => a.Office)
             .Include(a => a.Creator)
+            .Include(a => a.AppointmentServices).ThenInclude(aps => aps.Service)
             .FirstOrDefaultAsync(a => a.AppointmentId == id);
 
         if (a == null) return NotFound();
@@ -65,13 +75,19 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
             a.Patient.Ime + " " + a.Patient.Prezime,
             a.DoctorId,
             a.Doctor.User.Ime + " " + a.Doctor.User.Prezime,
-            a.ServiceId, a.Service.Naziv,
+            a.ServiceId,
+            a.AppointmentServices.Count > 0
+                ? string.Join(", ", a.AppointmentServices.Select(s => s.Service.Naziv))
+                : a.Service.Naziv,
             a.OfficeId,
             a.Office != null ? a.Office.Naziv : "—",
             a.DatumVreme, a.TrajanjeMinuta, a.Status,
             a.RazlogPromene, a.RazlogOtkazivanja,
             a.Creator != null ? a.Creator.Ime + " " + a.Creator.Prezime : "—",
-            a.DatumKreiranja
+            a.DatumKreiranja,
+            a.AppointmentServices.Count > 0
+                ? a.AppointmentServices.Select(s => s.ServiceId).ToList()
+                : [a.ServiceId]
         ));
     }
 
@@ -79,13 +95,18 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "admin,recepcija,lekar")]
     public async Task<ActionResult<AppointmentDetailResponse>> Create(CreateAppointmentRequest req)
     {
-        var service = await db.Services.FindAsync(req.ServiceId);
-        if (service == null) return BadRequest("Usluga ne postoji.");
+        if (req.ServiceIds == null || req.ServiceIds.Count == 0)
+            return BadRequest("Morate odabrati barem jednu uslugu.");
+
+        var distinctIds = req.ServiceIds.Distinct().ToList();
+        var services = await db.Services.Where(s => distinctIds.Contains(s.ServiceId)).ToListAsync();
+        if (services.Count != distinctIds.Count)
+            return BadRequest("Jedna ili više usluga ne postoji.");
 
         if (req.DatumVreme < DateTime.Now)
             return BadRequest("Ne možete zakazati termin u prošlosti.");
 
-        var trajanje = service.TrajanjeMinuta;
+        var trajanje = services.Sum(s => s.TrajanjeMinuta);
         var kraj = req.DatumVreme.AddMinutes(trajanje);
 
         // Conflict: non-working day
@@ -134,12 +155,15 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         {
             PatientId = req.PatientId,
             DoctorId = req.DoctorId,
-            ServiceId = req.ServiceId,
+            ServiceId = distinctIds[0],
             OfficeId = req.OfficeId,
             DatumVreme = req.DatumVreme,
             TrajanjeMinuta = trajanje,
             CreatorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!,
         };
+
+        foreach (var svcId in distinctIds)
+            appointment.AppointmentServices.Add(new AppointmentService { ServiceId = svcId });
 
         db.Appointments.Add(appointment);
         await db.SaveChangesAsync();
@@ -157,8 +181,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         if (appointment.Status != "zakazan")
             return BadRequest("Samo zakazani termini mogu biti pomereni.");
 
-        var service = await db.Services.FindAsync(appointment.ServiceId);
-        var trajanje = service!.TrajanjeMinuta;
+        var trajanje = appointment.TrajanjeMinuta;
         var kraj = req.DatumVreme.AddMinutes(trajanje);
         var officeId = req.OfficeId ?? appointment.OfficeId;
         if (!officeId.HasValue)
@@ -212,7 +235,6 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
     public async Task<ActionResult<AppointmentDetailResponse>> ApproveRequest(int id, ApproveAppointmentRequest req)
     {
         var appointment = await db.Appointments
-            .Include(a => a.Service)
             .FirstOrDefaultAsync(a => a.AppointmentId == id);
 
         if (appointment == null) return NotFound();
@@ -225,7 +247,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         if (office == null)
             return BadRequest("Ordinacija nije pronađena ili nije dostupna.");
 
-        var trajanje = appointment.Service.TrajanjeMinuta;
+        var trajanje = appointment.TrajanjeMinuta;
         var kraj = appointment.DatumVreme.AddMinutes(trajanje);
         var nonBlockingStatuses = new[] { "otkazao_pacijent", "otkazala_klinika", "nije_se_pojavio", "zahtev" };
 
@@ -383,10 +405,24 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
 
     [HttpGet("available-slots")]
     public async Task<ActionResult<List<AvailableSlotResponse>>> AvailableSlots(
-        [FromQuery] int doctorId, [FromQuery] int serviceId, [FromQuery] string date, [FromQuery] int? officeId)
+        [FromQuery] int doctorId, [FromQuery] int? serviceId, [FromQuery] string? serviceIds, [FromQuery] string date, [FromQuery] int? officeId)
     {
         if (!DateOnly.TryParse(date, out var dateOnly))
             return BadRequest("Nevažeći format datuma.");
+
+        // Parse service IDs from either parameter
+        var svcIds = new List<int>();
+        if (!string.IsNullOrEmpty(serviceIds))
+            svcIds = serviceIds.Split(',').Select(int.Parse).Distinct().ToList();
+        else if (serviceId.HasValue)
+            svcIds = [serviceId.Value];
+
+        if (svcIds.Count == 0)
+            return BadRequest("Morate odabrati barem jednu uslugu.");
+
+        var svcs = await db.Services.Where(s => svcIds.Contains(s.ServiceId)).ToListAsync();
+        if (svcs.Count == 0) return BadRequest("Usluga ne postoji.");
+        var duration = svcs.Sum(s => s.TrajanjeMinuta);
 
         // Check non-working day
         var isNonWorking = await db.NonWorkingDays.AnyAsync(n => n.Datum == dateOnly);
@@ -398,11 +434,6 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
         var wh = await db.WorkingHours.FirstOrDefaultAsync(w =>
             w.DoctorId == doctorId && w.DanUNedelji == dayOfWeek);
         if (wh == null) return Ok(new List<AvailableSlotResponse>());
-
-        // Get service duration
-        var service = await db.Services.FindAsync(serviceId);
-        if (service == null) return BadRequest("Usluga ne postoji.");
-        var duration = service.TrajanjeMinuta;
 
         // Get existing appointments for that doctor on that date
         var dateStart = dateOnly.ToDateTime(TimeOnly.MinValue);

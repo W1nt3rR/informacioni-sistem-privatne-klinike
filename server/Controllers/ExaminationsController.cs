@@ -170,11 +170,139 @@ public class ExaminationsController(AppDbContext db) : ControllerBase
 
         exam.Status = "zavrsen";
 
-        var appointment = await db.Appointments.FindAsync(exam.AppointmentId);
+        var appointment = await db.Appointments
+            .Include(a => a.AppointmentServices).ThenInclude(aps => aps.Service)
+            .Include(a => a.Service)
+            .Include(a => a.Invoice)
+            .FirstOrDefaultAsync(a => a.AppointmentId == exam.AppointmentId);
+
         if (appointment != null)
             appointment.Status = "realizovan";
 
+        // Auto-create invoice if none exists for this appointment
+        if (appointment != null && appointment.Invoice == null)
+        {
+            var services = appointment.AppointmentServices.Count > 0
+                ? appointment.AppointmentServices.Select(aps => aps.Service).ToList()
+                : new List<Service> { appointment.Service };
+
+            // Calculate totals
+            decimal total = 0;
+            var invoiceItems = new List<InvoiceItem>();
+            foreach (var svc in services)
+            {
+                invoiceItems.Add(new InvoiceItem
+                {
+                    ServiceId = svc.ServiceId,
+                    ExaminationId = exam.ExaminationId,
+                    JedinicnaCena = svc.Cena,
+                    Kolicina = 1,
+                    PopustProcenat = 0,
+                    Iznos = svc.Cena
+                });
+                total += svc.Cena;
+            }
+
+            // Gather applicable discounts
+            var patient = await db.Patients.FindAsync(exam.PatientId);
+            var appliedDiscounts = await GatherDiscounts(patient!, services.Count);
+            var cumulativePercent = Math.Min(appliedDiscounts.Sum(d => d.Procenat), 100m);
+            var discountAmount = total * cumulativePercent / 100;
+
+            var brojRacuna = await GenerateBrojRacuna();
+
+            var invoice = new Invoice
+            {
+                PatientId = exam.PatientId,
+                AppointmentId = appointment.AppointmentId,
+                BrojRacuna = brojRacuna,
+                DatumIzdavanja = DateTime.UtcNow,
+                UkupanIznos = total,
+                PopustProcenat = cumulativePercent,
+                IznosZaNaplatu = total - discountAmount,
+            };
+
+            foreach (var item in invoiceItems)
+                invoice.Items.Add(item);
+
+            foreach (var ad in appliedDiscounts)
+            {
+                invoice.InvoiceDiscounts.Add(new InvoiceDiscount
+                {
+                    DiscountId = ad.DiscountId,
+                    Procenat = ad.Procenat
+                });
+            }
+
+            db.Invoices.Add(invoice);
+        }
+
         await db.SaveChangesAsync();
         return NoContent();
+    }
+
+    // ---- Private helpers ----
+
+    private async Task<List<Discount>> GatherDiscounts(Patient patient, int itemCount)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var activeDiscounts = await db.Discounts
+            .Where(d => d.Aktivan &&
+                (d.VaziOd == null || d.VaziOd <= today) &&
+                (d.VaziDo == null || d.VaziDo >= today))
+            .ToListAsync();
+
+        var applied = new List<Discount>();
+
+        if (patient.JeStudent)
+        {
+            var studentDiscount = activeDiscounts.FirstOrDefault(d => d.Tip == "student");
+            if (studentDiscount != null) applied.Add(studentDiscount);
+        }
+
+        if (patient.JePenzioner)
+        {
+            var pensionerDiscount = activeDiscounts.FirstOrDefault(d => d.Tip == "penzioner");
+            if (pensionerDiscount != null) applied.Add(pensionerDiscount);
+        }
+
+        if (itemCount >= 3)
+        {
+            var paket3 = activeDiscounts.FirstOrDefault(d => d.Tip == "paket3");
+            if (paket3 != null) applied.Add(paket3);
+        }
+        else if (itemCount >= 2)
+        {
+            var paket2 = activeDiscounts.FirstOrDefault(d => d.Tip == "paket2");
+            if (paket2 != null) applied.Add(paket2);
+        }
+
+        var generalDiscount = activeDiscounts.FirstOrDefault(d => d.Tip == "opsti");
+        if (generalDiscount != null && generalDiscount.Procenat > 0)
+            applied.Add(generalDiscount);
+
+        return applied;
+    }
+
+    private async Task<string> GenerateBrojRacuna()
+    {
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        var prefix = $"RN-{today}-";
+
+        var lastNumber = await db.Invoices
+            .Where(i => i.BrojRacuna.StartsWith(prefix))
+            .OrderByDescending(i => i.BrojRacuna)
+            .Select(i => i.BrojRacuna)
+            .FirstOrDefaultAsync();
+
+        int seq = 1;
+        if (lastNumber is not null)
+        {
+            var numPart = lastNumber[prefix.Length..];
+            if (int.TryParse(numPart, out int parsed))
+                seq = parsed + 1;
+        }
+
+        return $"{prefix}{seq:D3}";
     }
 }

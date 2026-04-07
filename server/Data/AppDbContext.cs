@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
     public DbSet<WorkingHours> WorkingHours => Set<WorkingHours>();
     public DbSet<NonWorkingDay> NonWorkingDays => Set<NonWorkingDay>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<AppointmentService> AppointmentServices => Set<AppointmentService>();
     public DbSet<WaitingListItem> WaitingListItems => Set<WaitingListItem>();
     public DbSet<Diagnosis> Diagnoses => Set<Diagnosis>();
     public DbSet<Examination> Examinations => Set<Examination>();
@@ -63,6 +64,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
         ConfigureWorkingHours(builder);
         ConfigureNonWorkingDay(builder);
         ConfigureAppointment(builder);
+        ConfigureAppointmentService(builder);
         ConfigureWaitingListItem(builder);
         ConfigureDiagnosis(builder);
         ConfigureExamination(builder);
@@ -270,6 +272,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAuditService 
             e.HasIndex(a => new { a.DoctorId, a.DatumVreme });
             e.HasIndex(a => new { a.OfficeId, a.DatumVreme });
             e.HasIndex(a => a.Status);
+        });
+    }
+
+    private static void ConfigureAppointmentService(ModelBuilder builder)
+    {
+        builder.Entity<AppointmentService>(e =>
+        {
+            e.HasKey(aps => new { aps.AppointmentId, aps.ServiceId });
+            e.HasOne(aps => aps.Appointment)
+                .WithMany(a => a.AppointmentServices)
+                .HasForeignKey(aps => aps.AppointmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(aps => aps.Service)
+                .WithMany(s => s.AppointmentServices)
+                .HasForeignKey(aps => aps.ServiceId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

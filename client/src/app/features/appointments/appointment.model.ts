@@ -5,6 +5,7 @@ export interface AppointmentListItem {
   doctorId: number;
   lekarIme: string;
   serviceId: number;
+  serviceIds: number[];
   uslugaNaziv: string;
   officeId: number | null;
   ordinacijaNaziv: string;
@@ -23,7 +24,7 @@ export interface AppointmentDetail extends AppointmentListItem {
 export interface CreateAppointmentRequest {
   patientId: number;
   doctorId: number;
-  serviceId: number;
+  serviceIds: number[];
   officeId: number;
   datumVreme: string;
 }

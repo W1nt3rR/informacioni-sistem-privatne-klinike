@@ -23,5 +23,6 @@ public class Appointment
     public ApplicationUser? Creator { get; set; }
     public Examination? Examination { get; set; }
     public Invoice? Invoice { get; set; }
+    public ICollection<AppointmentService> AppointmentServices { get; set; } = [];
     public ICollection<Notification> Notifications { get; set; } = [];
 }

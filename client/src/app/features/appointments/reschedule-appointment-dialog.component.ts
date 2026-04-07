@@ -96,7 +96,7 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
     }
 
     this.api.get<AvailableSlot[]>(
-      `appointments/available-slots?doctorId=${this.data.doctorId}&serviceId=${this.data.serviceId}&date=${this.model.date}&officeId=${this.model.officeId}`,
+      `appointments/available-slots?doctorId=${this.data.doctorId}&serviceIds=${this.data.serviceIds.join(',')}&date=${this.model.date}&officeId=${this.model.officeId}`,
     ).subscribe(s => {
       this.slots.set(s);
       this.slotsLoaded.set(true);

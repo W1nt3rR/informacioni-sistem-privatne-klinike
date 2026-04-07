@@ -13,7 +13,8 @@ public record AppointmentListResponse(
     DateTime DatumVreme,
     int TrajanjeMinuta,
     string Status,
-    int? ExaminationId);
+    int? ExaminationId,
+    List<int> ServiceIds);
 
 public record AppointmentDetailResponse(
     int AppointmentId,
@@ -31,12 +32,13 @@ public record AppointmentDetailResponse(
     string? RazlogPromene,
     string? RazlogOtkazivanja,
     string KreatorIme,
-    DateTime DatumKreiranja);
+    DateTime DatumKreiranja,
+    List<int> ServiceIds);
 
 public record CreateAppointmentRequest(
     int PatientId,
     int DoctorId,
-    int ServiceId,
+    List<int> ServiceIds,
     int OfficeId,
     DateTime DatumVreme);
 

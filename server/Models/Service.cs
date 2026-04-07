@@ -14,6 +14,7 @@ public class Service
     public Specialization Specialization { get; set; } = null!;
     public ICollection<DoctorService> DoctorServices { get; set; } = [];
     public ICollection<Appointment> Appointments { get; set; } = [];
+    public ICollection<AppointmentService> AppointmentServices { get; set; } = [];
     public ICollection<InvoiceItem> InvoiceItems { get; set; } = [];
     public ICollection<WaitingListItem> WaitingListItems { get; set; } = [];
 }

@@ -23,7 +23,7 @@ public record PortalAppointmentResponse(
     string Status);
 
 public record PortalAppointmentRequest(
-    int ServiceId,
+    List<int> ServiceIds,
     int DoctorId,
     DateTime DatumVreme,
     string? Napomena);
