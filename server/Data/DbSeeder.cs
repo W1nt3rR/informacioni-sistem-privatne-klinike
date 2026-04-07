@@ -198,6 +198,29 @@ public static class DbSeeder
         db.Patients.AddRange(pat1, pat2, pat3, pat4, pat5);
         await db.SaveChangesAsync();
 
+        // --- Patient User Accounts ---
+        async Task LinkPatientAccount(Patient patient, string username, string password)
+        {
+            var user = new ApplicationUser
+            {
+                UserName = username,
+                Email = patient.Email,
+                Ime = patient.Ime,
+                Prezime = patient.Prezime,
+                EmailConfirmed = true
+            };
+            await userManager.CreateAsync(user, password);
+            await userManager.AddToRoleAsync(user, "pacijent");
+            patient.UserId = user.Id;
+        }
+
+        await LinkPatientAccount(pat1, "pacijent1", "Pacij123");
+        await LinkPatientAccount(pat2, "pacijent2", "Pacij123");
+        await LinkPatientAccount(pat3, "pacijent3", "Pacij123");
+        await LinkPatientAccount(pat4, "pacijent4", "Pacij123");
+        await LinkPatientAccount(pat5, "pacijent5", "Pacij123");
+        await db.SaveChangesAsync();
+
         // --- Allergies ---
         db.Allergies.AddRange(
             new Allergy { PatientId = pat1.PatientId, NazivAlergena = "Penicilin", Ozbiljnost = "teska", Opis = "Anafilaktička reakcija" },

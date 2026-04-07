@@ -175,11 +175,16 @@ Klijent je dostupan na `http://localhost:4200`.
 | admin          | Admin123  | admin     |
 | recepcija1     | Recep123  | recepcija |
 | menadzer1      | Menad123  | menadzer  |
-| drmarko        | Lekar123  | lekar     |
-| drmilica       | Lekar123  | lekar     |
-| drnikola       | Lekar123  | lekar     |
-| drana          | Lekar123  | lekar     |
-| drpetar        | Lekar123  | lekar     |
+| dramir         | Lekar123  | lekar     |
+| drlejla        | Lekar123  | lekar     |
+| drharis        | Lekar123  | lekar     |
+| dramra         | Lekar123  | lekar     |
+| dradnan        | Lekar123  | lekar     |
+| pacijent1      | Pacij123  | pacijent  |
+| pacijent2      | Pacij123  | pacijent  |
+| pacijent3      | Pacij123  | pacijent  |
+| pacijent4      | Pacij123  | pacijent  |
+| pacijent5      | Pacij123  | pacijent  |
 
 ### Struktura projekta
 
