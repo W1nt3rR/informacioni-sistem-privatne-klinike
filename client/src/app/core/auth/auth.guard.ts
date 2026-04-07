@@ -6,12 +6,29 @@ export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isLoggedIn()) {
-    return true;
+  if (!authService.isLoggedIn()) {
+    router.navigate(['/login']);
+    return false;
   }
 
-  router.navigate(['/login']);
-  return false;
+  if (authService.hasRole('pacijent')) {
+    router.navigate(['/portal']);
+    return false;
+  }
+
+  return true;
+};
+
+export const portalGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isLoggedIn()) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  return true;
 };
 
 export const roleGuard = (...roles: string[]): CanActivateFn => {
@@ -28,7 +45,8 @@ export const roleGuard = (...roles: string[]): CanActivateFn => {
       return true;
     }
 
-    router.navigate(['/dashboard']);
+    const fallback = authService.hasRole('pacijent') ? '/portal' : '/dashboard';
+    router.navigate([fallback]);
     return false;
   };
 };

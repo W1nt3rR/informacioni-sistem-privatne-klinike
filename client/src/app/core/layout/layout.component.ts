@@ -98,7 +98,9 @@ export class LayoutComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.loadPendingCount();
+    if (this.authService.hasAnyRole(['admin', 'recepcija'])) {
+      this.loadPendingCount();
+    }
   }
 
   visibleItems(group: NavGroup): NavItem[] {

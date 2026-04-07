@@ -29,7 +29,8 @@ export class LoginComponent {
     this.authService.login({ userName: this.userName, password: this.password }).subscribe({
       next: () => {
         this.loading.set(false);
-        this.router.navigate(['/dashboard']);
+        const target = this.authService.hasRole('pacijent') ? '/portal' : '/dashboard';
+        this.router.navigate([target]);
       },
       error: (err) => {
         this.loading.set(false);
