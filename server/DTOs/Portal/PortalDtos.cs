@@ -49,3 +49,43 @@ public record PortalMessageResponse(
 
 public record SendMessageRequest(
     string Sadrzaj);
+
+public record PortalInvoiceListResponse(
+    int InvoiceId,
+    string BrojRacuna,
+    DateTime DatumIzdavanja,
+    decimal UkupanIznos,
+    decimal PopustProcenat,
+    decimal IznosZaNaplatu,
+    string StatusNaplate,
+    decimal Placeno);
+
+public record PortalInvoiceDetailResponse(
+    int InvoiceId,
+    string BrojRacuna,
+    DateTime DatumIzdavanja,
+    decimal UkupanIznos,
+    decimal PopustProcenat,
+    decimal IznosZaNaplatu,
+    string StatusNaplate,
+    string? Napomena,
+    decimal Placeno,
+    List<PortalInvoiceItemResponse> Items,
+    List<PortalPaymentResponse> Payments);
+
+public record PortalInvoiceItemResponse(
+    string ServiceNaziv,
+    int Kolicina,
+    decimal JedinicnaCena,
+    decimal Iznos);
+
+public record PortalPaymentResponse(
+    decimal Iznos,
+    string NacinPlacanja,
+    DateTime DatumPlacanja);
+
+public record PortalPayInvoiceRequest(
+    [Required, Range(0.01, double.MaxValue, ErrorMessage = "Iznos mora biti veći od 0.")]
+    decimal Iznos,
+    [Required, RegularExpression(@"^(kartica|virman)$", ErrorMessage = "Način plaćanja mora biti 'kartica' ili 'virman'.")]
+    string NacinPlacanja);

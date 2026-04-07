@@ -7,11 +7,9 @@ import { ExaminationListItem } from './examination.model';
 
 interface AppointmentForExam {
   appointmentId: number;
-  patientIme: string;
-  patientPrezime: string;
-  doctorIme: string;
-  doctorPrezime: string;
-  serviceName: string;
+  pacijentIme: string;
+  lekarIme: string;
+  uslugaNaziv: string;
   datumVreme: string;
   trajanjeMinuta: number;
   status: string;
@@ -41,9 +39,9 @@ interface AppointmentForExam {
                 @for (a of todayAppointments(); track a.appointmentId) {
                   <tr>
                     <td>{{ formatTime(a.datumVreme) }}</td>
-                    <td>{{ a.patientIme }} {{ a.patientPrezime }}</td>
-                    <td>Dr {{ a.doctorIme }} {{ a.doctorPrezime }}</td>
-                    <td>{{ a.serviceName }}</td>
+                    <td>{{ a.pacijentIme }}</td>
+                    <td>Dr {{ a.lekarIme }}</td>
+                    <td>{{ a.uslugaNaziv }}</td>
                     <td><span class="badge" [class]="statusBadge(a.status)">{{ statusLabel(a.status) }}</span></td>
                     <td>
                       @if (a.status === 'zakazan') {

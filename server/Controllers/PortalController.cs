@@ -224,6 +224,91 @@ public class PortalController(
         return Ok(new { message = "Poruka poslata." });
     }
 
+    // ─── My Invoices ───────────────────────────────────────────────
+    [HttpGet("invoices")]
+    [Authorize(Roles = "pacijent")]
+    public async Task<ActionResult<List<PortalInvoiceListResponse>>> MyInvoices()
+    {
+        var patient = await GetCurrentPatient();
+        if (patient is null) return NotFound(new { message = "Pacijent nije pronađen." });
+
+        var invoices = await db.Invoices
+            .Include(i => i.Payments)
+            .Where(i => i.PatientId == patient.PatientId)
+            .OrderByDescending(i => i.DatumIzdavanja)
+            .Select(i => new PortalInvoiceListResponse(
+                i.InvoiceId,
+                i.BrojRacuna,
+                i.DatumIzdavanja,
+                i.UkupanIznos,
+                i.PopustProcenat,
+                i.IznosZaNaplatu,
+                i.StatusNaplate,
+                i.Payments.Sum(p => p.Iznos)))
+            .ToListAsync();
+
+        return invoices;
+    }
+
+    [HttpGet("invoices/{id:int}")]
+    [Authorize(Roles = "pacijent")]
+    public async Task<ActionResult<PortalInvoiceDetailResponse>> GetInvoice(int id)
+    {
+        var patient = await GetCurrentPatient();
+        if (patient is null) return NotFound(new { message = "Pacijent nije pronađen." });
+
+        var inv = await db.Invoices
+            .Include(i => i.Items).ThenInclude(it => it.Service)
+            .Include(i => i.Payments)
+            .FirstOrDefaultAsync(i => i.InvoiceId == id && i.PatientId == patient.PatientId);
+
+        if (inv is null) return NotFound(new { message = "Račun nije pronađen." });
+
+        return new PortalInvoiceDetailResponse(
+            inv.InvoiceId, inv.BrojRacuna, inv.DatumIzdavanja,
+            inv.UkupanIznos, inv.PopustProcenat, inv.IznosZaNaplatu,
+            inv.StatusNaplate, inv.Napomena,
+            inv.Payments.Sum(p => p.Iznos),
+            inv.Items.Select(it => new PortalInvoiceItemResponse(
+                it.Service.Naziv, it.Kolicina, it.JedinicnaCena, it.Iznos)).ToList(),
+            inv.Payments.OrderByDescending(p => p.DatumPlacanja)
+                .Select(p => new PortalPaymentResponse(p.Iznos, p.NacinPlacanja, p.DatumPlacanja)).ToList());
+    }
+
+    [HttpPost("invoices/{id:int}/pay")]
+    [Authorize(Roles = "pacijent")]
+    public async Task<IActionResult> PayInvoice(int id, [FromBody] PortalPayInvoiceRequest req)
+    {
+        var patient = await GetCurrentPatient();
+        if (patient is null) return NotFound(new { message = "Pacijent nije pronađen." });
+
+        var invoice = await db.Invoices
+            .Include(i => i.Payments)
+            .FirstOrDefaultAsync(i => i.InvoiceId == id && i.PatientId == patient.PatientId);
+
+        if (invoice is null) return NotFound(new { message = "Račun nije pronađen." });
+        if (invoice.StatusNaplate == "placeno")
+            return BadRequest(new { message = "Račun je već plaćen." });
+
+        var totalPaid = invoice.Payments.Sum(p => p.Iznos) + req.Iznos;
+        if (totalPaid > invoice.IznosZaNaplatu)
+            return BadRequest(new { message = "Iznos premašuje dugovanje." });
+
+        var payment = new Payment
+        {
+            InvoiceId = id,
+            Iznos = req.Iznos,
+            NacinPlacanja = req.NacinPlacanja,
+            DatumPlacanja = DateTime.UtcNow
+        };
+        db.Payments.Add(payment);
+
+        invoice.StatusNaplate = totalPaid >= invoice.IznosZaNaplatu ? "placeno" : "delimicno";
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Uplata uspešno evidentirana." });
+    }
+
     // ─── Helper ──────────────────────────────────────────────────────
     private async Task<Patient?> GetCurrentPatient()
     {

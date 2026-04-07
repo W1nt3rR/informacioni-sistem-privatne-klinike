@@ -23,6 +23,7 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
             .Include(a => a.Doctor).ThenInclude(d => d.User)
             .Include(a => a.Service)
             .Include(a => a.Office)
+            .Include(a => a.Examination)
             .AsQueryable();
 
         if (from.HasValue) query = query.Where(a => a.DatumVreme >= from.Value);
@@ -39,7 +40,8 @@ public class AppointmentsController(AppDbContext db) : ControllerBase
             a.ServiceId, a.Service.Naziv,
             a.OfficeId,
             a.Office != null ? a.Office.Naziv : "—",
-            a.DatumVreme, a.TrajanjeMinuta, a.Status
+            a.DatumVreme, a.TrajanjeMinuta, a.Status,
+            a.Examination != null ? a.Examination.ExaminationId : null
         )).ToListAsync();
 
         return Ok(list);

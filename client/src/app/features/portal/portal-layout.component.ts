@@ -29,6 +29,10 @@ import { ChangePasswordDialogComponent } from '../../core/auth/change-password-d
              class="btn btn-ghost btn-sm">
             <span class="material-icons text-sm">mail</span> Poruke
           </a>
+          <a routerLink="/portal/invoices" routerLinkActive="bg-primary-focus"
+             class="btn btn-ghost btn-sm">
+            <span class="material-icons text-sm">receipt_long</span> Računi
+          </a>
         </nav>
 
         <div class="flex-1"></div>

@@ -23,6 +23,10 @@ export const PORTAL_ROUTES: Routes = [
         path: 'messages',
         loadComponent: () => import('./portal-messages.component').then(m => m.PortalMessagesComponent),
       },
+      {
+        path: 'invoices',
+        loadComponent: () => import('./my-invoices.component').then(m => m.MyInvoicesComponent),
+      },
     ],
   },
 ];

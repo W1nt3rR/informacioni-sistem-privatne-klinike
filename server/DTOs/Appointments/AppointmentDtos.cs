@@ -12,7 +12,8 @@ public record AppointmentListResponse(
     string OrdinacijaNaziv,
     DateTime DatumVreme,
     int TrajanjeMinuta,
-    string Status);
+    string Status,
+    int? ExaminationId);
 
 public record AppointmentDetailResponse(
     int AppointmentId,
