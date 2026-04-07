@@ -49,8 +49,11 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddCors(options =>
 {
+    var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
+                  ?? ["http://localhost:4200"];
+
     options.AddPolicy("AllowAngular", policy =>
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins(origins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
@@ -99,5 +102,12 @@ app.UseAuthorization();
 app.UseMiddleware<AuditContextMiddleware>();
 
 app.MapControllers();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+    app.MapFallbackToFile("index.html");
+}
 
 app.Run();

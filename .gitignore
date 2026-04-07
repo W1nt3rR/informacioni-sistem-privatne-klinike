@@ -5,12 +5,16 @@
 server/bin/
 server/obj/
 server/out/
+publish/
 
 ## User-specific files
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
+
+## Production secrets
+server/appsettings.Production.json
 
 ## NuGet
 **/packages/
